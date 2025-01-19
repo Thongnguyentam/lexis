@@ -1,6 +1,7 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import pandas as pd
 
 def render_settings():
     # Load environment variables
@@ -179,6 +180,31 @@ def render_settings():
                 st.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
         except Exception as e:
             st.error(f"Error processing uploaded file: {str(e)}")
+    
+    # Dataset uploader for visualization
+    st.markdown("#### Dataset Upload")
+    dataset_file = st.file_uploader(
+        "Upload Dataset (CSV/Excel)",
+        type=["csv", "xlsx"],
+        help="Upload a dataset for visualization"
+    )
+    
+    if dataset_file is not None:
+        try:
+            # Store dataset in session state
+            if dataset_file.name.endswith('.csv'):
+                data = pd.read_csv(dataset_file)
+            else:
+                data = pd.read_excel(dataset_file)
+            st.session_state['visualization_data'] = data
+            st.success(f"Dataset '{dataset_file.name}' loaded successfully!")
+            
+            # Show dataset preview
+            st.markdown("#### Dataset Preview")
+            st.dataframe(data.head())
+            
+        except Exception as e:
+            st.error(f"Error loading dataset: {str(e)}")
     
     # Available Files dropdown
     if st.session_state.available_files:
