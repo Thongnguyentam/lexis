@@ -1,6 +1,25 @@
 import streamlit as st
+import os
+from dotenv import load_dotenv
 
 def render_settings():
+    # Load environment variables
+    load_dotenv()
+    
+    # Get API key from environment or session state
+    default_api_key = os.getenv('MISTRAL_API_KEY', '')
+    
+    st.markdown("""
+        <style>
+        .settings-container {
+            margin-top: 1rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
+    # Wrap all content in settings container
+    st.markdown('<div class="settings-container">', unsafe_allow_html=True)
+    
     # Conversations dropdown section
     st.markdown("### Conversations")
     
@@ -67,6 +86,33 @@ def render_settings():
                 st.session_state.conversations.pop(idx)
                 st.experimental_rerun()
     
+    # Divider
+    st.markdown("---")
+      
+    # Initialize API key in session state if not exists
+    st.session_state.setdefault('mistral_api_key', default_api_key)
+    
+    # API key input with password mask
+    api_key = st.text_input(
+        "Mistral API Key",
+        value=st.session_state.mistral_api_key,
+        type="password",
+        help="Enter your Mistral API key here. You can also set it in the .env file.",
+        placeholder="sk-..."
+    )
+    
+    # Save API key to session state when changed
+    if api_key != st.session_state.mistral_api_key:
+        st.session_state.mistral_api_key = api_key
+        if api_key:
+            st.success("API key updated successfully!")
+    
+    # Show API key status
+    if st.session_state.mistral_api_key:
+        st.info("✓ API key is set")
+    else:
+        st.warning("⚠️ API key is not set")
+  
     # Divider
     st.markdown("---")
     
@@ -168,4 +214,7 @@ def render_settings():
                 'detail': feedback_detail
             }
             st.session_state['feedback_submitted'] = feedback_data
-  
+    
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    

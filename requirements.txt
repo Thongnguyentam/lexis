@@ -1,4 +1,5 @@
 streamlit
 PyPDF2
 pandas
-streamlit-javascript
+mistralai
+python-dotenv

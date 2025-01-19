@@ -25,10 +25,14 @@ MANIFEST
 venv/
 env/
 ENV/
-.env
 .venv
 env.bak/
 venv.bak/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
 
 # IDE
 .idea/

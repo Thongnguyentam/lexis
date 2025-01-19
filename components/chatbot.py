@@ -1,27 +1,80 @@
 import streamlit as st
+import os
+from mistralai import Mistral
+from dotenv import load_dotenv
+
+def init_chat_history():
+    if "messages" not in st.session_state:
+        # Add initial welcome message
+        st.session_state.messages = [
+            {
+                "role": "assistant",
+                "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
+            }
+        ]
+
+def add_message(role, content):
+    st.session_state.messages.append({"role": role, "content": content})
 
 def render_chatbot():
-    st.markdown("### Conversations")
+    st.markdown("""
+        <style>
+        .chat-container {
+            margin-top: 1rem;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
-    # Chat messages container
-    chat_container = st.container()
+    # Load environment variables
+    load_dotenv()
     
-    with chat_container:
-        # Display messages here
-        st.markdown("Chat messages will appear here")
+    # Get API key from environment
+    api_key = os.getenv("MISTRAL_API_KEY")
+    if not api_key:
+        st.error("Please set your Mistral API key in the .env file")
+        return
+        
+    model = "mistral-large-latest"
     
-    # Input area
-    user_input = st.text_input("Chat input", key="chat_input")
+    # Initialize Mistral client
+    client = Mistral(api_key=api_key)
     
-    # Buttons
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        if st.button("Send", use_container_width=True):
-            if user_input:
-                # Handle sending message
-                st.write(f"Sent: {user_input}")
+    init_chat_history()
     
-    with col2:
-        if st.button("Regen", use_container_width=True):
-            # Handle regenerating response
-            st.write("Regenerating response...") 
+    st.title("💬 Chat with Mistral")
+
+    # Display messages
+    for message in st.session_state.messages:
+        with st.chat_message(message["role"]):
+            st.markdown(message["content"])
+    
+    # Chat input
+    if prompt := st.chat_input("Message Mistral..."):
+        # Add user message to chat
+        with st.chat_message("user"):
+            st.markdown(prompt)
+        add_message("user", prompt)
+        
+        # Get bot response
+        with st.chat_message("assistant"):
+            message_placeholder = st.empty()
+            try:
+                chat_response = client.chat.complete(
+                    model=model,
+                    messages=[
+                        {
+                            "role": msg["role"],
+                            "content": msg["content"]
+                        }
+                        for msg in st.session_state.messages
+                    ]
+                )
+                
+                # Get and display response
+                assistant_response = chat_response.choices[0].message.content
+                message_placeholder.markdown(assistant_response)
+                add_message("assistant", assistant_response)
+                
+            except Exception as e:
+                message_placeholder.error(f"Error: {str(e)}")
