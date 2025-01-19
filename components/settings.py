@@ -67,21 +67,22 @@ def render_settings():
             st.session_state['current_conversation'] = st.session_state.conversations.index(st.session_state.selected_conv)
         
         # Action buttons row
-        col1, col2, col3 = st.columns([4, 1, 1])
-        with col2:
+        col1, col2 = st.columns(2)
+        
+        with col1:
             if st.session_state.edit_mode:
-                if st.button("💾", key="save_edit", use_container_width=True):
+                if st.button("💾 Save", key="save_edit", use_container_width=True):
                     idx = st.session_state.conversations.index(st.session_state.selected_conv)
                     st.session_state.conversations[idx] = edited_name
                     st.session_state.edit_mode = False
                     st.experimental_rerun()
             else:
-                if st.button("✏️", key="edit_conv", use_container_width=True):
+                if st.button("✏️ Edit", key="edit_conv", use_container_width=True):
                     st.session_state.edit_mode = True
                     st.experimental_rerun()
         
-        with col3:
-            if st.button("🗑️", key="delete_conv", use_container_width=True):
+        with col2:
+            if st.button("🗑️ Delete", key="delete_conv", use_container_width=True):
                 idx = st.session_state.conversations.index(st.session_state.selected_conv)
                 st.session_state.conversations.pop(idx)
                 st.experimental_rerun()
@@ -120,19 +121,13 @@ def render_settings():
     st.markdown("#### File Collection")
     col1, col2 = st.columns(2)
     
-    # Initialize file search state
+    # Initialize file search state and available files if not exists
     st.session_state.setdefault('show_file_search', False)
-    st.session_state.setdefault('available_files', [
-        "document1.pdf",
-        "report2023.pdf",
-        "analysis.pdf",
-        "data.pdf"
-    ])
+    st.session_state.setdefault('available_files', [])
     
     with col1:
         if st.button("Search All", key="search_all", use_container_width=True):
-            # Handle Search All action
-            st.session_state['search_all_clicked'] = True
+            st.session_state['search_mode'] = 'all_files'
             st.session_state['show_file_search'] = False
     
     with col2:
@@ -150,6 +145,12 @@ def render_settings():
         )
         if selected_files:
             st.session_state['selected_files'] = selected_files
+            # Update search mode and files in session state
+            st.session_state['search_mode'] = 'specific_files'
+        else:
+            # Clear selected files if none are selected
+            st.session_state['selected_files'] = []
+            st.session_state['search_mode'] = None
     
     # File uploader
     uploaded_file = st.file_uploader(
@@ -157,6 +158,14 @@ def render_settings():
         type=["pdf"],
         help="Drop your PDF file here"
     )
+    
+    # Handle uploaded file
+    if uploaded_file is not None:
+        # Add the uploaded file to available_files if not already present
+        if uploaded_file.name not in st.session_state.available_files:
+            st.session_state.available_files.append(uploaded_file.name)
+            st.session_state.uploaded_file = uploaded_file  # Store the file object
+            st.success(f"File '{uploaded_file.name}' uploaded successfully!")
     
     # Feedback section with toggle
     feedback_header = st.container()

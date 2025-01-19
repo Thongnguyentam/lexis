@@ -5,6 +5,27 @@ from components.info_panel import render_info_panel
 
 st.set_page_config(layout="wide")
 
+def initialize_session_state():
+    """Initialize session state variables"""
+    if 'conversations' not in st.session_state:
+        st.session_state.conversations = [
+            "Previous Chat 1",
+            "Previous Chat 2",
+            "Previous Chat 3"
+        ]
+    
+    if 'edit_mode' not in st.session_state:
+        st.session_state.edit_mode = False
+    
+    if 'show_file_search' not in st.session_state:
+        st.session_state.show_file_search = False
+    
+    if 'available_files' not in st.session_state:
+        st.session_state.available_files = []
+    
+    if 'pdf_ref' not in st.session_state:
+        st.session_state.pdf_ref = None
+
 def main():
     # Custom CSS for layout
     st.markdown("""
@@ -39,17 +60,20 @@ def main():
         </style>
     """, unsafe_allow_html=True)
 
-    # Create three columns with equal top padding
-    settings_col, chat_col, info_col = st.columns([1, 2, 1])
+    # Initialize session state
+    initialize_session_state()
+    
+    # Create the main layout with columns
+    col1, col2, col3 = st.columns([1, 2, 2])
     
     # Render components in their respective columns
-    with settings_col:
+    with col1:
         render_settings()
     
-    with chat_col:
+    with col2:
         render_chatbot()
     
-    with info_col:
+    with col3:
         render_info_panel()
 
 if __name__ == "__main__":
