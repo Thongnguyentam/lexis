@@ -1,0 +1,2 @@
+git status | cat
+git reset --hard HEAD 
