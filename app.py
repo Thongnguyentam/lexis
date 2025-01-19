@@ -2,19 +2,7 @@ import streamlit as st
 from components.settings import render_settings
 from components.chatbot import render_chatbot
 from components.info_panel import render_info_panel
-
-# Set maximum upload size to 1GB (1000MB)
-st.set_page_config(
-    layout="wide",
-    menu_items={
-        'Get Help': None,
-        'Report a bug': None,
-        'About': None
-    }
-)
-
-# Increase the upload limit
-st._config.set_option('server.maxUploadSize', 1000)
+from utils.ui import init_page_config
 
 def initialize_session_state():
     """Initialize session state variables"""
@@ -38,39 +26,9 @@ def initialize_session_state():
         st.session_state.pdf_ref = None
 
 def main():
-    # Custom CSS for layout
-    st.markdown("""
-        <style>
-        .block-container {
-            padding-top: 1rem !important;
-            padding-bottom: 1rem !important;
-        }
-        
-        [data-testid="stSidebarContent"] {
-            padding-top: 1rem !important;
-        }
-        
-        .stMarkdown {
-            margin-top: 0 !important;
-        }
-        
-        h1, h2, h3 {
-            margin-top: 0 !important;
-            padding-top: 0 !important;
-        }
-        
-        /* Remove default Streamlit padding */
-        .main > div {
-            padding-top: 1rem !important;
-        }
-        
-        [data-testid="column"] {
-            padding-top: 0 !important;
-            padding-bottom: 0 !important;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-
+    # Initialize page config and load styles
+    init_page_config()
+    
     # Initialize session state
     initialize_session_state()
     
