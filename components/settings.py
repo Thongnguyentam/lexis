@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import pandas as pd
+from components.chatbot import start_new_chat
 
 def render_settings():
     # Load environment variables
@@ -15,6 +16,21 @@ def render_settings():
         .settings-container {
             margin-top: 1rem;
         }
+        .chat-list {
+            margin-bottom: 1rem;
+        }
+        .chat-item {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .chat-item:hover {
+            background-color: #f0f2f6;
+        }
+        .selected-chat {
+            background-color: #e6f3ff;
+        }
         </style>
     """, unsafe_allow_html=True)
     
@@ -24,48 +40,50 @@ def render_settings():
     # Conversations dropdown section
     st.markdown("### Conversations")
     
-    # Create a container for the conversations list
-    conversations_container = st.container()
+    # New Chat button
+    if st.button("+ New Chat", use_container_width=True):
+        start_new_chat()
     
-    with conversations_container:
-        # Add New Chat button
-        if st.button("+ New Chat", use_container_width=True):
-            # Handle new chat creation
-            st.session_state.setdefault('conversations', [])
-            st.session_state.conversations.insert(0, f"New Chat {len(st.session_state.conversations) + 1}")
+    # Initialize edit mode state if not exists
+    st.session_state.setdefault('edit_mode', False)
+    
+    if "chats" in st.session_state:
+        # Get list of chat titles for dropdown
+        chat_options = [
+            (chat_id, chat_data["title"]) 
+            for chat_id, chat_data in st.session_state.chats.items()
+        ]
         
-        # Initialize conversations in session state if not exists
-        st.session_state.setdefault('conversations', [
-            "Previous Chat 1",
-            "Previous Chat 2",
-            "Previous Chat 3"
-        ])
-        
-        # Initialize edit mode state if not exists
-        st.session_state.setdefault('edit_mode', False)
-        
-        # Create a dropdown for conversations
         if st.session_state.edit_mode:
             # Show text input when editing
+            current_chat = st.session_state.chats[st.session_state.current_chat_id]
             edited_name = st.text_input(
-                "Edit Conversation Name",
-                value=st.session_state.get('selected_conv', ''),
-                key="edit_conv_name",
+                "Edit Chat Name",
+                value=current_chat["title"],
+                key="edit_chat_name",
                 label_visibility="collapsed"
             )
         else:
             # Show dropdown when not editing
-            selected_conv = st.selectbox(
+            selected_title = st.selectbox(
                 "Select Conversation",
-                options=st.session_state.conversations,
+                options=[title for _, title in chat_options],
+                index=next(
+                    (i for i, (chat_id, _) in enumerate(chat_options) 
+                    if chat_id == st.session_state.current_chat_id), 
+                    0
+                ),
                 key="conversation_select",
                 label_visibility="collapsed"
             )
-            st.session_state.selected_conv = selected_conv
-        
-        # Store selected conversation in session state
-        if not st.session_state.edit_mode and st.session_state.get('selected_conv'):
-            st.session_state['current_conversation'] = st.session_state.conversations.index(st.session_state.selected_conv)
+            # Find chat_id for selected title
+            selected_chat_id = next(
+                chat_id for chat_id, title in chat_options 
+                if title == selected_title
+            )
+            if selected_chat_id != st.session_state.current_chat_id:
+                st.session_state.current_chat_id = selected_chat_id
+                st.experimental_rerun()
         
         # Action buttons row
         col1, col2 = st.columns(2)
@@ -73,8 +91,7 @@ def render_settings():
         with col1:
             if st.session_state.edit_mode:
                 if st.button("💾 Save", key="save_edit", use_container_width=True):
-                    idx = st.session_state.conversations.index(st.session_state.selected_conv)
-                    st.session_state.conversations[idx] = edited_name
+                    st.session_state.chats[st.session_state.current_chat_id]["title"] = edited_name
                     st.session_state.edit_mode = False
                     st.experimental_rerun()
             else:
@@ -84,13 +101,18 @@ def render_settings():
         
         with col2:
             if st.button("🗑️ Delete", key="delete_conv", use_container_width=True):
-                idx = st.session_state.conversations.index(st.session_state.selected_conv)
-                st.session_state.conversations.pop(idx)
-                st.experimental_rerun()
-    
-    # Divider
+                if st.session_state.current_chat_id in st.session_state.chats:
+                    del st.session_state.chats[st.session_state.current_chat_id]
+                    # Create new chat if we deleted the last one
+                    if not st.session_state.chats:
+                        start_new_chat()
+                    else:
+                        # Switch to another existing chat
+                        st.session_state.current_chat_id = next(iter(st.session_state.chats))
+                    st.experimental_rerun()
+
     st.markdown("---")
-      
+    
     # Initialize API key in session state if not exists
     st.session_state.setdefault('mistral_api_key', default_api_key)
     
@@ -181,31 +203,6 @@ def render_settings():
         except Exception as e:
             st.error(f"Error processing uploaded file: {str(e)}")
     
-    # Dataset uploader for visualization
-    st.markdown("#### Dataset Upload")
-    dataset_file = st.file_uploader(
-        "Upload Dataset (CSV/Excel)",
-        type=["csv", "xlsx"],
-        help="Upload a dataset for visualization"
-    )
-    
-    if dataset_file is not None:
-        try:
-            # Store dataset in session state
-            if dataset_file.name.endswith('.csv'):
-                data = pd.read_csv(dataset_file)
-            else:
-                data = pd.read_excel(dataset_file)
-            st.session_state['visualization_data'] = data
-            st.success(f"Dataset '{dataset_file.name}' loaded successfully!")
-            
-            # Show dataset preview
-            st.markdown("#### Dataset Preview")
-            st.dataframe(data.head())
-            
-        except Exception as e:
-            st.error(f"Error loading dataset: {str(e)}")
-    
     # Available Files dropdown
     if st.session_state.available_files:
         st.markdown("#### Available Files")
@@ -277,6 +274,7 @@ def render_settings():
                 'detail': feedback_detail
             }
             st.session_state['feedback_submitted'] = feedback_data
+
     
     st.markdown('</div>', unsafe_allow_html=True)
     

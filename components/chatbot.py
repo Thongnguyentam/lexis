@@ -5,19 +5,59 @@ from dotenv import load_dotenv
 from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPERT_PROMPT
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
+from datetime import datetime
 
 def init_chat_history():
-    if "messages" not in st.session_state:
-        # Add initial welcome message
-        st.session_state.messages = [
+    """Initialize chat history in session state"""
+    if "chats" not in st.session_state:
+        st.session_state.chats = {}
+    
+    if "current_chat_id" not in st.session_state:
+        new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+        st.session_state.current_chat_id = new_chat_id
+        st.session_state.chats[new_chat_id] = {
+            "title": "New Chat",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
+                }
+            ]
+        }
+
+def get_current_chat():
+    """Get the current chat's messages"""
+    if st.session_state.current_chat_id in st.session_state.chats:
+        return st.session_state.chats[st.session_state.current_chat_id]["messages"]
+    return []
+
+def add_message(role, content):
+    """Add a message to the current chat"""
+    if st.session_state.current_chat_id in st.session_state.chats:
+        st.session_state.chats[st.session_state.current_chat_id]["messages"].append({
+            "role": role,
+            "content": content
+        })
+        # Update chat title based on first user message if it's still "New Chat"
+        if (role == "user" and 
+            len(st.session_state.chats[st.session_state.current_chat_id]["messages"]) == 2 and
+            st.session_state.chats[st.session_state.current_chat_id]["title"] == "New Chat"):
+            st.session_state.chats[st.session_state.current_chat_id]["title"] = content[:30] + "..."
+
+def start_new_chat():
+    """Start a new chat session"""
+    new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    st.session_state.current_chat_id = new_chat_id
+    st.session_state.chats[new_chat_id] = {
+        "title": "New Chat",
+        "messages": [
             {
                 "role": "assistant",
                 "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
             }
         ]
-
-def add_message(role, content):
-    st.session_state.messages.append({"role": role, "content": content})
+    }
+    st.experimental_rerun()
 
 def render_chatbot():
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
@@ -35,8 +75,9 @@ def render_chatbot():
     
     st.title("💬 Chat with Mistral")
 
-    # Display messages
-    for message in st.session_state.messages:
+    # Display current chat messages
+    messages = get_current_chat()
+    for message in messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
