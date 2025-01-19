@@ -145,10 +145,8 @@ def render_settings():
         )
         if selected_files:
             st.session_state['selected_files'] = selected_files
-            # Update search mode and files in session state
             st.session_state['search_mode'] = 'specific_files'
         else:
-            # Clear selected files if none are selected
             st.session_state['selected_files'] = []
             st.session_state['search_mode'] = None
     
@@ -164,8 +162,28 @@ def render_settings():
         # Add the uploaded file to available_files if not already present
         if uploaded_file.name not in st.session_state.available_files:
             st.session_state.available_files.append(uploaded_file.name)
-            st.session_state.uploaded_file = uploaded_file  # Store the file object
+            if 'uploaded_files' not in st.session_state:
+                st.session_state.uploaded_files = {}
+            st.session_state.uploaded_files[uploaded_file.name] = uploaded_file
+            st.session_state.uploaded_file = uploaded_file
+            # Automatically set the current file to the newly uploaded file
+            st.session_state['current_file'] = uploaded_file.name
             st.success(f"File '{uploaded_file.name}' uploaded successfully!")
+    
+    # Available Files dropdown
+    if st.session_state.available_files:
+        st.markdown("#### Available Files")
+        file_options = ["Select a file..."] + st.session_state.available_files
+        selected_option = st.selectbox(
+            "Select a file to view",
+            options=file_options,
+            key="file_viewer_selector",
+            label_visibility="collapsed",
+            index=file_options.index(st.session_state.get('current_file', "Select a file..."))  # Set default value to current file
+        )
+        
+        if selected_option != "Select a file...":
+            st.session_state['current_file'] = selected_option
     
     # Feedback section with toggle
     feedback_header = st.container()
