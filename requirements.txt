@@ -3,3 +3,4 @@ PyPDF2
 pandas
 mistralai
 python-dotenv
+snowflake-snowpark-python==1.26.0
