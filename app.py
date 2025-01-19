@@ -3,7 +3,18 @@ from components.settings import render_settings
 from components.chatbot import render_chatbot
 from components.info_panel import render_info_panel
 
-st.set_page_config(layout="wide")
+# Set maximum upload size to 1GB (1000MB)
+st.set_page_config(
+    layout="wide",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
+)
+
+# Increase the upload limit
+st._config.set_option('server.maxUploadSize', 1000)
 
 def initialize_session_state():
     """Initialize session state variables"""

@@ -159,16 +159,26 @@ def render_settings():
     
     # Handle uploaded file
     if uploaded_file is not None:
-        # Add the uploaded file to available_files if not already present
-        if uploaded_file.name not in st.session_state.available_files:
-            st.session_state.available_files.append(uploaded_file.name)
-            if 'uploaded_files' not in st.session_state:
-                st.session_state.uploaded_files = {}
-            st.session_state.uploaded_files[uploaded_file.name] = uploaded_file
-            st.session_state.uploaded_file = uploaded_file
-            # Automatically set the current file to the newly uploaded file
-            st.session_state['current_file'] = uploaded_file.name
-            st.success(f"File '{uploaded_file.name}' uploaded successfully!")
+        try:
+            # Add the uploaded file to available_files if not already present
+            if uploaded_file.name not in st.session_state.available_files:
+                # Initialize uploaded_files dict if not exists
+                if 'uploaded_files' not in st.session_state:
+                    st.session_state.uploaded_files = {}
+                
+                # Store the file data
+                file_bytes = uploaded_file.read()
+                uploaded_file.seek(0)  # Reset file pointer after reading
+                
+                # Store everything in session state
+                st.session_state.available_files.append(uploaded_file.name)
+                st.session_state.uploaded_files[uploaded_file.name] = uploaded_file
+                st.session_state.uploaded_file = uploaded_file
+                st.session_state['current_file'] = uploaded_file.name
+                
+                st.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
+        except Exception as e:
+            st.error(f"Error processing uploaded file: {str(e)}")
     
     # Available Files dropdown
     if st.session_state.available_files:
