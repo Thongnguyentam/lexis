@@ -3,6 +3,8 @@ import os
 from mistralai import Mistral
 from dotenv import load_dotenv
 from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT
+from utils.snowflake_rag import SnowflakeRAG
+import pandas as pd
 
 def init_chat_history():
     if "messages" not in st.session_state:
@@ -77,3 +79,66 @@ def render_chatbot():
                 
             except Exception as e:
                 message_placeholder.error(f"Error: {str(e)}")
+
+class Chatbot:
+    def __init__(self):
+        self.rag = SnowflakeRAG()
+        # ... existing initialization code ...
+
+    def setup_rag_components(self):
+        """Setup RAG-related UI components"""
+        with st.sidebar:
+            st.header("Document Processing")
+            uploaded_file = st.file_uploader("Upload PDF", type=['pdf'])
+            if uploaded_file:
+                if st.button("Process Document"):
+                    try:
+                        # Save to Snowflake stage (implementation needed)
+                        stage_path = "@DOCUMENTS_STAGE"
+                        self.rag.extract_pdf_text(stage_path, "RAW_DOCUMENTS")
+                        self.rag.chunk_text("RAW_DOCUMENTS", "CHUNKED_DOCUMENTS")
+                        self.rag.create_search_service(
+                            "DOCUMENT_SEARCH",
+                            "CHUNKED_DOCUMENTS",
+                            "YOUR_DATABASE",
+                            "YOUR_SCHEMA"
+                        )
+                        st.success("Document processed successfully!")
+                    except Exception as e:
+                        st.error(f"Error processing document: {str(e)}")
+
+    def process_query(self, query: str):
+        """Process user query using RAG"""
+        try:
+            # Get relevant context
+            context = self.rag.search_context(
+                "DOCUMENT_SEARCH",
+                query,
+                "YOUR_DATABASE",
+                "YOUR_SCHEMA"
+            )
+
+            # Display retrieved context
+            st.subheader("Retrieved Context")
+            search_df = pd.json_normalize(context['results'])
+            for _, row in search_df.iterrows():
+                st.write(f"**Source:** {row['DOCUMENT_NAME']}")
+                st.caption(row['CHUNK'])
+                st.write('---')
+
+            # Get LLM response
+            model = st.selectbox(
+                'Select Model:',
+                ['mistral-large2', 'mistral-7b', 'llama3.1-8b', 'llama3.1-70b']
+            )
+            response = self.rag.get_llm_response(query, context, model)
+            
+            return response
+        except Exception as e:
+            st.error(f"Error processing query: {str(e)}")
+            return None
+
+    def display(self):
+        """Display chatbot interface"""
+        self.setup_rag_components()
+        # ... existing display code ...
