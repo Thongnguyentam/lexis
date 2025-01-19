@@ -17,13 +17,46 @@ def add_message(role, content):
     st.session_state.messages.append({"role": role, "content": content})
 
 def render_chatbot():
+    # Custom CSS to fix layout issues
     st.markdown("""
         <style>
         .chat-container {
             margin-top: 1rem;
         }
+
+        /* Style for the input box to remain fixed */
+        .stChatInput {
+            position: fixed;
+            bottom: 0;
+            width: 30%;
+            padding: 1rem;
+            background-color: #0E1117;
+            z-index: 1000; /* Ensure it is above other elements */
+        }
+
+        /* Adjust title margin for better spacing */
+        h1 {
+            margin-top: 1rem;
+        }
+
+        [data-testid="stChatMessageContainer"] {
+            padding-bottom: 100px !important;
+        }
+
+        /* Keep input container at bottom */
+        .stChatFloatingInputContainer {
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            max-width: 640px !important;
+            margin: 0 auto !important;
+            padding: 1rem !important;
+            background-color: #0E1117 !important;
+            border-top: 1px solid #333 !important;
+        }
         </style>
     """, unsafe_allow_html=True)
+    
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
     # Load environment variables
