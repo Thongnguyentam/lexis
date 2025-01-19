@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from mistralai import Mistral
 from dotenv import load_dotenv
-from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT
+from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPERT_PROMPT
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
 
@@ -77,15 +77,11 @@ class Chatbot:
         
     def process_visualization_request(self, query: str) -> str:
         """Handle visualization requests"""
-        system_prompt = """You are a Python data visualization expert. Generate only executable Python code using 
-        matplotlib for the requested visualization. For simple visualizations, create sample data within the code. 
-        Return only the Python code without any explanation or markdown."""
-        
         try:
             response = self.mistral_client.chat.complete(
                 model="mistral-large-latest",
                 messages=[
-                    {"role": "system", "content": system_prompt},
+                    {"role": "system", "content": VISUALIZATION_EXPERT_PROMPT},
                     {"role": "user", "content": query}
                 ]
             )
