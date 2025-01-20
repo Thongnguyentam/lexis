@@ -101,7 +101,7 @@ def render_settings():
             value=st.session_state.mistral_api_key,
             type="password",
             key="api_key_input",
-            label_visibility="collapsed"  # This removes the empty space above input
+            label_visibility="collapsed"
         )
     
     # Save button

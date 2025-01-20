@@ -11,7 +11,9 @@ from config import SnowflakeConfig
 from components.mindmap import MindMap
 
 def init_chat_history():
-    """Initialize chat history in session state"""
+    """Initialize or retrieve chat history from session state.
+    Creates a new chat session if none exists, with a timestamp-based ID
+    and default welcome message."""
     if "chats" not in st.session_state:
         st.session_state.chats = {}
     
@@ -29,13 +31,24 @@ def init_chat_history():
         }
 
 def get_current_chat():
-    """Get the current chat's messages"""
+    """Retrieve messages from the current active chat session.
+    
+    Returns:
+        list: List of message dictionaries containing role and content.
+        Returns empty list if no current chat exists.
+    """
     if st.session_state.current_chat_id in st.session_state.chats:
         return st.session_state.chats[st.session_state.current_chat_id]["messages"]
     return []
 
 def add_message(role, content):
-    """Add a message to the current chat"""
+    """Add a new message to the current chat session.
+    Also updates chat title based on first user message.
+    
+    Args:
+        role (str): Message sender role ('user' or 'assistant')
+        content (str): Message content text
+    """
     if st.session_state.current_chat_id in st.session_state.chats:
         st.session_state.chats[st.session_state.current_chat_id]["messages"].append({
             "role": role,
@@ -48,7 +61,8 @@ def add_message(role, content):
             st.session_state.chats[st.session_state.current_chat_id]["title"] = content[:30] + "..."
 
 def start_new_chat():
-    """Start a new chat session"""
+    """Create a fresh chat session with a new timestamp-based ID.
+    Initializes with default welcome message and triggers page rerun."""
     new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     st.session_state.current_chat_id = new_chat_id
     st.session_state.chats[new_chat_id] = {
@@ -63,6 +77,12 @@ def start_new_chat():
     st.experimental_rerun()
 
 def render_chatbot():
+    """Render the main chatbot interface including:
+    - Chat history display
+    - Message input
+    - Response handling for different types of requests (visualization, mindmap, etc)
+    
+    Handles API authentication and error states."""
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
     # Load environment variables
@@ -117,7 +137,20 @@ def render_chatbot():
                 message_placeholder.error(f"Error: {str(e)}")
 
 class Chatbot:
+    """Main chatbot class handling message processing and responses.
+    
+    Integrates with:
+    - Mistral AI for language processing
+    - Snowflake for RAG (Retrieval Augmented Generation)
+    - Code interpreter for visualizations
+    - Mind map generation
+    """
+
     def __init__(self):
+        """Initialize chatbot components including:
+        - Code interpreter for running visualization code
+        - Mistral AI client for language processing
+        - Snowflake connector for knowledge base access"""
         self.code_interpreter = CodeInterpreter()
         # Initialize Mistral client
         api_key = os.getenv("MISTRAL_API_KEY")
@@ -134,7 +167,15 @@ class Chatbot:
             self.snowflake = None
 
     def is_mindmap_request(self, query: str) -> bool:
-        """Check if the query is requesting a mindmap"""
+        """Detect if user query is requesting mind map visualization
+        by checking for relevant keywords.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            bool: True if query appears to be requesting a mind map
+        """
         mindmap_keywords = [
             'mind map', 'mindmap', 'knowledge graph', 'knowledgegraph',
             'mindmaps', 'knowledge graphs', 'knowledgegraphs'
@@ -142,7 +183,15 @@ class Chatbot:
         return any(keyword in query.lower() for keyword in mindmap_keywords)
 
     def process_mindmap_request(self, query: str) -> str:
-        """Handle mindmap generation requests"""
+        """Generate and display an interactive mind map based on user query.
+        Stores mind map in session state for info panel display.
+        
+        Args:
+            query (str): User's mind map request
+            
+        Returns:
+            str: Success/error message about mind map creation
+        """
         try:
             # Initialize or get existing mindmap
             mindmap = MindMap.load()
@@ -161,7 +210,20 @@ class Chatbot:
             return "Sorry, I encountered an error while creating the mind map."
 
     def process_visualization_request(self, query: str) -> str:
-        """Handle visualization requests"""
+        """Generate data visualizations using Mistral AI and code interpreter.
+        
+        Args:
+            query (str): User's visualization request
+            
+        Returns:
+            str: Success/error message about visualization creation
+            
+        Process:
+        1. Get visualization code from Mistral AI
+        2. Extract pure Python code from response
+        3. Execute code through interpreter
+        4. Display results
+        """
         try:
             response = self.mistral_client.chat.complete(
                 model="mistral-large-latest",
@@ -192,7 +254,20 @@ class Chatbot:
             return "Sorry, I encountered an error while creating the visualization."
 
     def process_query(self, query: str) -> str:
-        """Process user query using RAG if available, otherwise fall back to regular chat"""
+        """Process user input and generate appropriate response.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            str: Response text, potentially including source attribution
+            
+        Handles multiple request types:
+        - Mind map generation
+        - Data visualization
+        - RAG-enhanced responses
+        - Regular chat responses
+        """
         try:
             # Check if it's a mindmap request
             if self.is_mindmap_request(query):
@@ -230,7 +305,15 @@ class Chatbot:
             return "Sorry, I encountered an error while processing your request."
 
     def _process_regular_query(self, query: str) -> str:
-        """Fallback method for regular chat without RAG"""
+        """Handle standard chat queries without RAG enhancement.
+        Used as fallback when Snowflake connection unavailable.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            str: Direct response from Mistral AI
+        """
         response = self.mistral_client.chat.complete(
             model="mistral-large-latest",
             messages=[
@@ -241,7 +324,9 @@ class Chatbot:
         return response.choices[0].message.content
 
     def cleanup(self):
-        """Cleanup resources"""
+        """Clean up resources and connections:
+        - Code interpreter cleanup
+        - Snowflake session closure"""
         if hasattr(self, 'code_interpreter'):
             self.code_interpreter.cleanup()
         if hasattr(self, 'snowflake'):
@@ -251,5 +336,5 @@ class Chatbot:
                 pass
 
     def __del__(self):
-        """Cleanup resources on deletion"""
+        """Destructor to ensure proper resource cleanup when object is deleted."""
         self.cleanup()

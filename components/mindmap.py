@@ -20,22 +20,26 @@ from prompts.system_prompts import (
     MINDMAP_EXAMPLE_CONVERSATION
 )
 
-# Update the color constants with better values
-COLOR = "#00CED1"
-FOCUS_COLOR = "#FF4500"
+# Update the color constants with descriptive names and values
+NODE_COLOR = "#00CED1"  # Teal color for regular nodes
+SELECTED_NODE_COLOR = "#FF4500"  # Orange color for selected/focused nodes
 
 mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 
 @dataclass
 class Message:
-    """A class that represents a message in a Mistral conversation.
+    """Represents a message in a Mistral conversation.
+    
+    Attributes:
+        content (str): The text content of the message
+        role (Literal["user", "system", "assistant"]): The role of the message sender
     """
     content: str
     role: Literal["user", "system", "assistant"]
 
-    # is a built-in method for dataclasses
-    # called after the __init__ method
     def __post_init__(self):
+        """Post-initialization hook to clean up message content.
+        Removes indentation and extra whitespace."""
         self.content = dedent(self.content).strip()
 
 START_CONVERSATION = [
@@ -48,13 +52,17 @@ for msg in MINDMAP_EXAMPLE_CONVERSATION:
     START_CONVERSATION.append(Message(msg["content"], role=msg["role"]))
 
 def ask_mistral(conversation: List[Message]) -> Tuple[str, List[Message]]:
-    """Ask Mistral to generate or modify the mind map.
+    """Send conversation to Mistral AI and get response.
     
     Args:
-        conversation (List[Message]): The conversation history.
+        conversation (List[Message]): List of previous messages in the conversation
         
     Returns:
-        Tuple[str, List[Message]]: The response text and updated conversation.
+        Tuple[str, List[Message]]: 
+            - Generated response text
+            - Updated conversation history including the new response
+            
+    Note: Uses mistral-large-latest model for optimal mind map generation
     """
     response = mistral_client.chat.complete(
         model="mistral-large-latest",
@@ -67,36 +75,61 @@ def ask_mistral(conversation: List[Message]) -> Tuple[str, List[Message]]:
     return msg.content, conversation + [msg]
 
 class MindMap:
-    """A class that represents a mind map as a graph.
+    """Represents and manages an interactive mind map visualization.
+    
+    The mind map is stored as a graph structure with nodes and edges.
+    Supports operations like:
+    - Creating new mind maps from text prompts
+    - Expanding existing nodes
+    - Deleting nodes and their connections
+    - Visualizing the graph interactively
     """
     
     def __init__(self, edges: Optional[List[Tuple[str, str]]]=None, nodes: Optional[List[str]]=None) -> None:
+        """Initialize a new mind map.
+        
+        Args:
+            edges (Optional[List[Tuple[str, str]]]): List of node pairs representing connections
+            nodes (Optional[List[str]]): List of node labels/content
+        """
         self.edges = [] if edges is None else edges
         self.nodes = [] if nodes is None else nodes
         self.save()
 
     @classmethod
     def load(cls) -> MindMap:
-        """Load mindmap from session state if it exists
+        """Load existing mind map from session state or create new one.
         
-        Returns: Mindmap
+        Returns:
+            MindMap: Retrieved or newly created mind map instance
         """
         if "mindmap" in st.session_state:
             return st.session_state["mindmap"]
         return cls()
 
     def save(self) -> None:
+        """Save current mind map state to session storage for persistence."""
         # save to session state
         st.session_state["mindmap"] = self
 
     def is_empty(self) -> bool:
+        """Check if mind map has any content.
+        
+        Returns:
+            bool: True if mind map has no edges, False otherwise
+        """
         return len(self.edges) == 0
     
     def ask_for_initial_graph(self, query: str) -> None:
-        """Ask Mistral to construct a graph from scratch.
-
+        """Generate a new mind map from scratch based on user query.
+        
         Args:
-            query (str): The query to ask Mistral about.
+            query (str): User's text prompt describing desired mind map content
+            
+        Process:
+        1. Send query to Mistral AI with mind map generation prompt
+        2. Parse response to extract node relationships
+        3. Update graph structure with new nodes and edges
         """
         conversation = START_CONVERSATION + [
             Message(f"""
@@ -110,11 +143,13 @@ class MindMap:
         self.parse_and_include_edges(output, replace=True)
 
     def ask_for_extended_graph(self, selected_node: Optional[str]=None, text: Optional[str]=None) -> None:
-        """Ask Mistral to extend the graph.
-
+        """Expand the mind map from a selected node or based on text instruction.
+        
         Args:
-            selected_node (Optional[str]): Node to expand from
+            selected_node (Optional[str]): Node to expand with new connections
             text (Optional[str]): Text description of how to modify the graph
+            
+        Note: At least one of selected_node or text must be provided
         """
         if (selected_node is None and text is None):
             return
@@ -133,12 +168,17 @@ class MindMap:
         self.parse_and_include_edges(output, replace=False)
 
     def parse_and_include_edges(self, output: str, replace: bool=True) -> None:
-        """Parse output from Mistral and include the edges in the graph.
-
+        """Parse Mistral's output and update the graph structure.
+        
         Args:
-            output (str): output from Mistral to be parsed
-            replace (bool, optional): if True, replace all edges with the new ones, 
-                otherwise add to existing edges. Defaults to True.
+            output (str): Raw text output from Mistral containing add/delete commands
+            replace (bool): If True, replace existing edges; if False, add to them
+            
+        Process:
+        1. Extract add/delete commands using regex
+        2. Process node and edge modifications
+        3. Update graph while maintaining consistency
+        4. Remove any duplicate edges
         """
 
         # Regex patterns
@@ -186,10 +226,15 @@ class MindMap:
         self.save()
 
     def _delete_node(self, node) -> None:
-        """Delete a node and all edges connected to it.
-
+        """Remove a node and all its connections from the graph.
+        
         Args:
-            node (str): The node to delete.
+            node (str): Label of the node to delete
+            
+        Effects:
+        - Removes all edges connected to the node
+        - Updates node list to reflect changes
+        - Records deletion in conversation history
         """
         self.edges = [e for e in self.edges if node not in frozenset(e)]
         self.nodes = list(set([n for e in self.edges for n in e]))
@@ -204,10 +249,18 @@ class MindMap:
         pass  # Controls moved to info_panel.py
 
     def visualize(self) -> None | str:
-        """Visualize the mindmap as an interactive graph using agraph.
+        """Create interactive visualization of the mind map.
         
         Returns:
-            Optional[str]: The clicked node if any
+            Optional[str]: Label of clicked node if any, None otherwise
+            
+        Features:
+        - Nodes sized based on selection status
+        - Color coding for regular vs selected nodes
+        - Interactive click handling
+        - Automatic layout with physics simulation
+        
+        Note: Uses streamlit-agraph for rendering
         """
         try:
             selected = st.session_state.get("last_expanded")
@@ -216,7 +269,7 @@ class MindMap:
                     id=n, 
                     label=n, 
                     size=10+10*(n==selected), 
-                    color=COLOR if n != selected else FOCUS_COLOR
+                    color=NODE_COLOR if n != selected else SELECTED_NODE_COLOR
                 ) 
                 for n in self.nodes
             ]
@@ -238,6 +291,14 @@ class MindMap:
             return None
 
 def main():
+    """Main entry point for standalone mind map application.
+    
+    Features:
+    - Sidebar input for mind map generation prompts
+    - Persistent state management
+    - Loading indicator during generation
+    - Automatic rerun on updates
+    """
     # will initialize the graph from session state
     # (if it exists) otherwise will create a new one
     mindmap = MindMap.load()
