@@ -11,6 +11,7 @@ from io import StringIO
 
 class CodeInterpreter:
     def __init__(self):
+        self._is_initialized = True
         self.globals = {
             'pd': pd,
             'plt': plt,
@@ -86,4 +87,9 @@ class CodeInterpreter:
             elif isinstance(result, plt.Figure):
                 st.pyplot(result)
             else:
-                st.write(result) 
+                st.write(result)
+
+    def cleanup(self):
+        """Cleanup any resources"""
+        if hasattr(self, '_is_initialized'):
+            self._is_initialized = False 

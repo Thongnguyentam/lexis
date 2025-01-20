@@ -204,7 +204,16 @@ class Chatbot:
         )
         return response.choices[0].message.content
 
-    def __del__(self):
+    def cleanup(self):
         """Cleanup resources"""
         if hasattr(self, 'code_interpreter'):
-            self.code_interpreter.close()
+            self.code_interpreter.cleanup()
+        if hasattr(self, 'snowflake'):
+            try:
+                self.snowflake.session.close()
+            except:
+                pass
+
+    def __del__(self):
+        """Cleanup resources on deletion"""
+        self.cleanup()
