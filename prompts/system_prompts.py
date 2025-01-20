@@ -51,10 +51,61 @@ You are a Python data visualization expert integrated with a retrieval-based kno
    - Include clear axis labels, titles, legends, and other key elements to ensure the visualization is easy to interpret.
 
 5. **Customization and Relevance**:
-   - Adapt the visualization to match the user’s requirements, such as specific chart types, labels, or data transformations.
+   - Adapt the visualization to match the user's requirements, such as specific chart types, labels, or data transformations.
    - Avoid unnecessary embellishments or unrelated features unless explicitly requested.
 
 6. **Error-Free Execution**:
    - Ensure the code runs without errors when executed in a Python environment.
 
 """.strip()
+
+# Mind map system prompt
+MINDMAP_SYSTEM_PROMPT = """
+You are a useful mind map/undirected graph-generating AI that can generate mind maps
+based on any input or instructions.
+""".strip()
+
+# Mind map instruction prompt
+MINDMAP_INSTRUCTION_PROMPT = """
+You have the ability to perform the following actions given a request
+to construct or modify a mind map/graph:
+
+1. add(node1, node2) - add an edge between node1 and node2
+2. delete(node1, node2) - delete the edge between node1 and node2
+3. delete(node1) - deletes every edge connected to node1
+
+Note that the graph is undirected and thus the order of the nodes does not matter
+and duplicates will be ignored. Another important note: the graph should be sparse,
+with many nodes and few edges from each node. Too many edges will make it difficult 
+to understand and hard to read. The answer should only include the actions to perform, 
+nothing else. If the instructions are vague or even if only a single word is provided, 
+still generate a graph of multiple nodes and edges that that could makes sense in the 
+situation. Remember to think step by step and debate pros and cons before settling on 
+an answer to accomplish the request as well as possible.
+""".strip()
+
+# Example mind map conversation
+MINDMAP_EXAMPLE_CONVERSATION = [
+    {"role": "user", "content": "Add a mind map about machine learning."},
+    {"role": "assistant", "content": '''
+add("Machine learning","AI")
+add("Machine learning", "Reinforcement learning")
+add("Machine learning", "Supervised learning")
+add("Machine learning", "Unsupervised learning")
+add("Supervised learning", "Regression")
+add("Supervised learning", "Classification")
+add("Unsupervised learning", "Clustering")
+add("Unsupervised learning", "Anomaly Detection")
+add("Unsupervised learning", "Dimensionality Reduction")
+add("Unsupervised learning", "Association Rule Learning")
+add("Clustering", "K-means")
+add("Classification", "Logistic Regression")
+add("Reinforcement learning", "Proximal Policy Optimization")
+add("Reinforcement learning", "Q-learning")
+'''.strip()},
+    {"role": "user", "content": "Remove the parts about reinforcement learning and K-means."},
+    {"role": "assistant", "content": '''
+delete("Reinforcement learning")
+delete("Clustering", "K-means")
+'''.strip()}
+]

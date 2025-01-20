@@ -1,4 +1,8 @@
 from __future__ import annotations
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
 import re
 from typing import Optional, Tuple, List, Union, Literal
 import base64
@@ -10,15 +14,18 @@ from mistralai import Mistral
 from dataclasses import dataclass, asdict
 from textwrap import dedent
 from streamlit_agraph import agraph, Node, Edge, Config
+from prompts.system_prompts import (
+    MINDMAP_SYSTEM_PROMPT,
+    MINDMAP_INSTRUCTION_PROMPT,
+    MINDMAP_EXAMPLE_CONVERSATION
+)
 
-# set title of page (will be seen in tab) and the width
 st.set_page_config(page_title="AI Mind Maps", layout="wide")
 
 # Update the color constants with better values
-COLOR = "#00CED1"  # Dark cyan
-FOCUS_COLOR = "#FF4500"  # Orange-red
+COLOR = "#00CED1"
+FOCUS_COLOR = "#FF4500"
 
-# Initialize Mistral client instead of OpenAI
 mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 
 @dataclass
@@ -34,53 +41,13 @@ class Message:
         self.content = dedent(self.content).strip()
 
 START_CONVERSATION = [
-    Message("""
-        You are a useful mind map/undirected graph-generating AI that can generate mind maps
-        based on any input or instructions.
-    """, role="system"),
-    Message("""
-        You have the ability to perform the following actions given a request
-        to construct or modify a mind map/graph:
-
-        1. add(node1, node2) - add an edge between node1 and node2
-        2. delete(node1, node2) - delete the edge between node1 and node2
-        3. delete(node1) - deletes every edge connected to node1
-
-        Note that the graph is undirected and thus the order of the nodes does not matter
-        and duplicates will be ignored. Another important note: the graph should be sparse,
-        with many nodes and few edges from each node. Too many edges will make it difficult 
-        to understand and hard to read. The answer should only include the actions to perform, 
-        nothing else. If the instructions are vague or even if only a single word is provided, 
-        still generate a graph of multiple nodes and edges that that could makes sense in the 
-        situation. Remember to think step by step and debate pros and cons before settling on 
-        an answer to accomplish the request as well as possible.
-
-        Here is my first request: Add a mind map about machine learning.
-    """, role="user"),
-    Message("""
-        add("Machine learning","AI")
-        add("Machine learning", "Reinforcement learning")
-        add("Machine learning", "Supervised learning")
-        add("Machine learning", "Unsupervised learning")
-        add("Supervised learning", "Regression")
-        add("Supervised learning", "Classification")
-        add("Unsupervised learning", "Clustering")
-        add("Unsupervised learning", "Anomaly Detection")
-        add("Unsupervised learning", "Dimensionality Reduction")
-        add("Unsupervised learning", "Association Rule Learning")
-        add("Clustering", "K-means")
-        add("Classification", "Logistic Regression")
-        add("Reinforcement learning", "Proximal Policy Optimization")
-        add("Reinforcement learning", "Q-learning")
-    """, role="assistant"),
-    Message("""
-        Remove the parts about reinforcement learning and K-means.
-    """, role="user"),
-    Message("""
-        delete("Reinforcement learning")
-        delete("Clustering", "K-means")
-    """, role="assistant")
+    Message(MINDMAP_SYSTEM_PROMPT, role="system"),
+    Message(MINDMAP_INSTRUCTION_PROMPT, role="user"),
 ]
+
+# Add example conversation messages
+for msg in MINDMAP_EXAMPLE_CONVERSATION:
+    START_CONVERSATION.append(Message(msg["content"], role=msg["role"]))
 
 def ask_mistral(conversation: List[Message]) -> Tuple[str, List[Message]]:
     """Ask Mistral to generate or modify the mind map.
@@ -235,13 +202,18 @@ class MindMap:
         self.save()
 
     def _add_expand_delete_buttons(self, node) -> None:
+        """Add expand and delete buttons for a specific node in the sidebar.
+        Only called when a node is clicked.
+
+        Args:
+            node (str): The node to add buttons for
+        """
         st.sidebar.subheader(node)
         cols = st.sidebar.columns(2)
         cols[0].button(
             label="Expand", 
             on_click=self.ask_for_extended_graph,
             key=f"expand_{node}",
-            # pass to on_click (self.ask_for_extended_graph)
             kwargs={"selected_node": node}
         )
         cols[1].button(
@@ -249,7 +221,6 @@ class MindMap:
             on_click=self._delete_node,
             type="primary",
             key=f"delete_{node}",
-            # pass on to _delete_node
             args=(node,)
         )
 
@@ -277,19 +248,9 @@ class MindMap:
                             edges=vis_edges, 
                             config=config)
             
-            # Create a set of nodes that have had buttons created
-            processed_nodes = set()
-            
-            # Handle clicked node first if it exists
-            if clicked_node is not None:
+            # Only show buttons for clicked node
+            if clicked_node:
                 self._add_expand_delete_buttons(clicked_node)
-                processed_nodes.add(clicked_node)
-            
-            # Then process remaining nodes alphabetically
-            for node in sorted(self.nodes):
-                if node not in processed_nodes:
-                    self._add_expand_delete_buttons(node)
-                    processed_nodes.add(node)
             
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
