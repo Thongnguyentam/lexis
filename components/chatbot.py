@@ -72,9 +72,6 @@ def render_chatbot():
         return
     
     init_chat_history()
-    
-    margin_top = "1rem"
-
     # Add title with custom class
     st.markdown('<h1 class="chat-title">💬 Chat with Mistral</h1>', unsafe_allow_html=True)
 
