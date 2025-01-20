@@ -73,7 +73,10 @@ def render_chatbot():
     
     init_chat_history()
     
-    st.title("💬 Chat with Mistral")
+    margin_top = "1rem"
+
+    # Add title with custom class
+    st.markdown('<h1 class="chat-title">💬 Chat with Mistral</h1>', unsafe_allow_html=True)
 
     # Display current chat messages
     messages = get_current_chat()
@@ -95,7 +98,7 @@ def render_chatbot():
                 chatbot = Chatbot()
                 
                 # Check if it's a visualization request
-                if any(keyword in prompt.lower() for keyword in ['plot', 'graph', 'visualize', 'chart']):
+                if any(keyword in prompt.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
                     response = chatbot.process_visualization_request(prompt)
                 else:
                     # Handle regular chat responses

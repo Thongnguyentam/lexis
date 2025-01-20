@@ -2,18 +2,16 @@ import streamlit as st
 import base64
 
 def render_info_panel():
+    # Add custom styles for info panel title
     st.markdown("""
         <style>
-        .info-container {
-            margin-top: 1rem;
+        .info-panel-title {
+            margin-top: 15px !important;
         }
         </style>
     """, unsafe_allow_html=True)
     
-    # Wrap all content in settings container
-    st.markdown('<div class="info-container">', unsafe_allow_html=True)
-    
-    st.markdown("### Information Panel")
+    st.markdown('<h1 class="info-panel-title">Information Panel</h1>', unsafe_allow_html=True)
     
     # Display the currently selected PDF
     if 'current_file' in st.session_state and st.session_state.get('current_file'):
