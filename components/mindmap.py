@@ -14,8 +14,9 @@ from streamlit_agraph import agraph, Node, Edge, Config
 # set title of page (will be seen in tab) and the width
 st.set_page_config(page_title="AI Mind Maps", layout="wide")
 
-COLOR = "cyan"
-FOCUS_COLOR = "red"
+# Update the color constants with better values
+COLOR = "#00CED1"  # Dark cyan
+FOCUS_COLOR = "#FF4500"  # Orange-red
 
 # Initialize Mistral client instead of OpenAI
 mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
