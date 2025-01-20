@@ -1,6 +1,8 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
+import pandas as pd
+from components.chatbot import start_new_chat
 
 def render_settings():
     # Load environment variables
@@ -9,71 +11,61 @@ def render_settings():
     # Get API key from environment or session state
     default_api_key = os.getenv('MISTRAL_API_KEY', '')
     
-    st.markdown("""
-        <style>
-        .settings-container {
-            margin-top: 1rem;
-        }
-        </style>
-    """, unsafe_allow_html=True)
+    # Conversations section
+    st.sidebar.markdown('<h1>Conversations</h1>', unsafe_allow_html=True)
     
-    # Wrap all content in settings container
-    st.markdown('<div class="settings-container">', unsafe_allow_html=True)
+    # New Chat button
+    if st.sidebar.button("+ New Chat", use_container_width=True):
+        start_new_chat()
     
-    # Conversations dropdown section
-    st.markdown("### Conversations")
+    # Initialize edit mode state if not exists
+    st.session_state.setdefault('edit_mode', False)
     
-    # Create a container for the conversations list
-    conversations_container = st.container()
-    
-    with conversations_container:
-        # Add New Chat button
-        if st.button("+ New Chat", use_container_width=True):
-            # Handle new chat creation
-            st.session_state.setdefault('conversations', [])
-            st.session_state.conversations.insert(0, f"New Chat {len(st.session_state.conversations) + 1}")
+    if "chats" in st.session_state:
+        # Get list of chat titles for dropdown
+        chat_options = [
+            (chat_id, chat_data["title"]) 
+            for chat_id, chat_data in st.session_state.chats.items()
+        ]
         
-        # Initialize conversations in session state if not exists
-        st.session_state.setdefault('conversations', [
-            "Previous Chat 1",
-            "Previous Chat 2",
-            "Previous Chat 3"
-        ])
-        
-        # Initialize edit mode state if not exists
-        st.session_state.setdefault('edit_mode', False)
-        
-        # Create a dropdown for conversations
         if st.session_state.edit_mode:
             # Show text input when editing
-            edited_name = st.text_input(
-                "Edit Conversation Name",
-                value=st.session_state.get('selected_conv', ''),
-                key="edit_conv_name",
+            current_chat = st.session_state.chats[st.session_state.current_chat_id]
+            edited_name = st.sidebar.text_input(
+                "Edit Chat Name",
+                value=current_chat["title"],
+                key="edit_chat_name",
                 label_visibility="collapsed"
             )
         else:
             # Show dropdown when not editing
-            selected_conv = st.selectbox(
+            selected_title = st.sidebar.selectbox(
                 "Select Conversation",
-                options=st.session_state.conversations,
+                options=[title for _, title in chat_options],
+                index=next(
+                    (i for i, (chat_id, _) in enumerate(chat_options) 
+                    if chat_id == st.session_state.current_chat_id), 
+                    0
+                ),
                 key="conversation_select",
                 label_visibility="collapsed"
             )
-            st.session_state.selected_conv = selected_conv
-        
-        # Store selected conversation in session state
-        if not st.session_state.edit_mode and st.session_state.get('selected_conv'):
-            st.session_state['current_conversation'] = st.session_state.conversations.index(st.session_state.selected_conv)
+            # Find chat_id for selected title
+            selected_chat_id = next(
+                chat_id for chat_id, title in chat_options 
+                if title == selected_title
+            )
+            if selected_chat_id != st.session_state.current_chat_id:
+                st.session_state.current_chat_id = selected_chat_id
+                st.experimental_rerun()
         
         # Action buttons row
-        col1, col2 = st.columns(2)
+        col1, col2 = st.sidebar.columns(2)
         
         with col1:
             if st.session_state.edit_mode:
                 if st.button("💾 Save", key="save_edit", use_container_width=True):
-                    idx = st.session_state.conversations.index(st.session_state.selected_conv)
-                    st.session_state.conversations[idx] = edited_name
+                    st.session_state.chats[st.session_state.current_chat_id]["title"] = edited_name
                     st.session_state.edit_mode = False
                     st.experimental_rerun()
             else:
@@ -83,18 +75,21 @@ def render_settings():
         
         with col2:
             if st.button("🗑️ Delete", key="delete_conv", use_container_width=True):
-                idx = st.session_state.conversations.index(st.session_state.selected_conv)
-                st.session_state.conversations.pop(idx)
-                st.experimental_rerun()
+                if st.session_state.current_chat_id in st.session_state.chats:
+                    del st.session_state.chats[st.session_state.current_chat_id]
+                    if not st.session_state.chats:
+                        start_new_chat()
+                    else:
+                        st.session_state.current_chat_id = next(iter(st.session_state.chats))
+                    st.experimental_rerun()
+
+    st.sidebar.markdown("---")
     
-    # Divider
-    st.markdown("---")
-      
     # Initialize API key in session state if not exists
     st.session_state.setdefault('mistral_api_key', default_api_key)
     
     # API key input with password mask
-    api_key = st.text_input(
+    api_key = st.sidebar.text_input(
         "Mistral API Key",
         value=st.session_state.mistral_api_key,
         type="password",
@@ -106,20 +101,19 @@ def render_settings():
     if api_key != st.session_state.mistral_api_key:
         st.session_state.mistral_api_key = api_key
         if api_key:
-            st.success("API key updated successfully!")
+            st.sidebar.success("API key updated successfully!")
     
     # Show API key status
     if st.session_state.mistral_api_key:
-        st.info("✓ API key is set")
+        st.sidebar.info("✓ API key is set")
     else:
-        st.warning("⚠️ API key is not set")
+        st.sidebar.warning("⚠️ API key is not set")
   
-    # Divider
-    st.markdown("---")
+    st.sidebar.markdown("---")
     
     # File Collection section
-    st.markdown("#### File Collection")
-    col1, col2 = st.columns(2)
+    st.sidebar.markdown('<h1>File Collection</h1>', unsafe_allow_html=True)
+    col1, col2 = st.sidebar.columns(2)
     
     # Initialize file search state and available files if not exists
     st.session_state.setdefault('show_file_search', False)
@@ -132,12 +126,11 @@ def render_settings():
     
     with col2:
         if st.button("Search in File(s)", key="search_files", use_container_width=True):
-            # Toggle file search dropdown
             st.session_state['show_file_search'] = not st.session_state['show_file_search']
     
     # Show file selection dropdown if search in files is clicked
     if st.session_state['show_file_search']:
-        selected_files = st.multiselect(
+        selected_files = st.sidebar.multiselect(
             "Select files to search",
             options=st.session_state.available_files,
             default=None,
@@ -151,107 +144,46 @@ def render_settings():
             st.session_state['search_mode'] = None
     
     # File uploader
-    uploaded_file = st.file_uploader(
-        "Upload PDF",
-        type=["pdf"],
-        help="Drop your PDF file here"
+    uploaded_file = st.sidebar.file_uploader(
+        "Upload Files",
+        type=["pdf", "docx", "txt", "csv", "xlsx", "xls", "ppt", "pptx"],
+        help="Drop your files here"
     )
     
     # Handle uploaded file
     if uploaded_file is not None:
         try:
-            # Add the uploaded file to available_files if not already present
             if uploaded_file.name not in st.session_state.available_files:
-                # Initialize uploaded_files dict if not exists
                 if 'uploaded_files' not in st.session_state:
                     st.session_state.uploaded_files = {}
                 
-                # Store the file data
                 file_bytes = uploaded_file.read()
-                uploaded_file.seek(0)  # Reset file pointer after reading
+                uploaded_file.seek(0)
                 
-                # Store everything in session state
                 st.session_state.available_files.append(uploaded_file.name)
                 st.session_state.uploaded_files[uploaded_file.name] = uploaded_file
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state['current_file'] = uploaded_file.name
                 
-                st.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
+                st.sidebar.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
         except Exception as e:
-            st.error(f"Error processing uploaded file: {str(e)}")
+            st.sidebar.error(f"Error processing uploaded file: {str(e)}")
     
     # Available Files dropdown
     if st.session_state.available_files:
-        st.markdown("#### Available Files")
+        st.sidebar.markdown("#### Available Files")
         file_options = ["Select a file..."] + st.session_state.available_files
-        selected_option = st.selectbox(
+        selected_option = st.sidebar.selectbox(
             "Select a file to view",
             options=file_options,
             key="file_viewer_selector",
             label_visibility="collapsed",
-            index=file_options.index(st.session_state.get('current_file', "Select a file..."))  # Set default value to current file
+            index=file_options.index(st.session_state.get('current_file', "Select a file..."))
         )
         
         if selected_option != "Select a file...":
             st.session_state['current_file'] = selected_option
-    
-    # Feedback section with toggle
-    feedback_header = st.container()
-    with feedback_header:
-        col1, col2 = st.columns([3, 1])
-        with col1:
-            st.markdown("#### Feedback")
-        with col2:
-            # Initialize show_feedback state if not exists
-            if 'show_feedback' not in st.session_state:
-                st.session_state.show_feedback = False
-                
-            # Create a clickable header that toggles visibility
-            if st.button(
-                '▼' if not st.session_state.show_feedback else '▲',
-                key='toggle_feedback',
-                use_container_width=True
-            ):
-                st.session_state.show_feedback = not st.session_state.show_feedback
-                st.experimental_rerun()
-    
-    # Show feedback content only if show_feedback is True
-    if st.session_state.show_feedback:
-        # Correctness section
-        st.markdown("##### Correctness:")
-        correctness = st.radio(
-            "Correctness",
-            options=["The answer is correct", "The answer is incorrect"],
-            label_visibility="collapsed"
-        )
-        
-        # Other issue section
-        st.markdown("##### Other issue:")
-        other_issue = st.radio(
-            "Other issue",
-            options=["The answer is offensive", "The evidence is incorrect"],
-            label_visibility="collapsed"
-        )
-        
-        # More detail text area
-        feedback_detail = st.text_area(
-            "More detail (e.g. how wrong is it, what is the correct answer, etc...)",
-            height=100
-        )
-        
-        # Help text
-        st.markdown("This will send the current chat and the user settings to help with investigation")
-        
-        # Report button
-        if st.button("Report", use_container_width=True):
-            # Handle report submission
-            feedback_data = {
-                'correctness': correctness,
-                'other_issue': other_issue,
-                'detail': feedback_detail
-            }
-            st.session_state['feedback_submitted'] = feedback_data
-    
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
     

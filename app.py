@@ -32,17 +32,17 @@ def main():
     # Initialize session state
     initialize_session_state()
     
-    # Create the main layout with columns
-    col1, col2, col3 = st.columns([1, 2, 2])
+    # Render settings in sidebar
+    render_settings()
+    
+    # Create the main layout with columns for chat and info panel
+    col1, col2 = st.columns([3, 2])
     
     # Render components in their respective columns
     with col1:
-        render_settings()
-    
-    with col2:
         render_chatbot()
     
-    with col3:
+    with col2:
         render_info_panel()
 
 if __name__ == "__main__":
