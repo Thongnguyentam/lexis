@@ -20,9 +20,8 @@ from prompts.system_prompts import (
     MINDMAP_EXAMPLE_CONVERSATION
 )
 
-# Update the color constants with descriptive names and values
-NODE_COLOR = "#00CED1"  # Teal color for regular nodes
-SELECTED_NODE_COLOR = "#FF4500"  # Orange color for selected/focused nodes
+NODE_COLOR = "#00CED1" 
+SELECTED_NODE_COLOR = "#FF4500"
 
 mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 
@@ -109,7 +108,6 @@ class MindMap:
 
     def save(self) -> None:
         """Save current mind map state to session storage for persistence."""
-        # save to session state
         st.session_state["mindmap"] = self
 
     def is_empty(self) -> bool:
@@ -181,11 +179,9 @@ class MindMap:
         4. Remove any duplicate edges
         """
 
-        # Regex patterns
         pattern1 = r'(add|delete)\("([^()"]+)",\s*"([^()"]+)"\)'
         pattern2 = r'(delete)\("([^()"]+)"\)'
 
-        # Find all matches in the text
         matches = re.findall(pattern1, output) + re.findall(pattern2, output)
 
         new_edges = []
@@ -212,8 +208,6 @@ class MindMap:
         else:
             edges = self.edges + new_edges
 
-        # make sure edges aren't added twice
-        # and remove nodes/edges that were deleted
         added = set()
         for edge in edges:
             nodes = frozenset(edge)
@@ -243,10 +237,6 @@ class MindMap:
             role="user"
         ))
         self.save()
-
-    def _add_expand_delete_buttons(self, node) -> None:
-        """DEPRECATED: This method is no longer used as controls are now in info_panel"""
-        pass  # Controls moved to info_panel.py
 
     def visualize(self) -> None | str:
         """Create interactive visualization of the mind map.
@@ -299,8 +289,6 @@ def main():
     - Loading indicator during generation
     - Automatic rerun on updates
     """
-    # will initialize the graph from session state
-    # (if it exists) otherwise will create a new one
     mindmap = MindMap.load()
 
     st.sidebar.title("AI Mind Map Generator")
@@ -319,10 +307,8 @@ def main():
     if empty and not valid_submission:
         return
 
-    with st.spinner(text="Loading graph..."):
-        # if submit and non-empty query, then create new mindmap
+    with st.spinner(text="Loading..."):
         if valid_submission:
-            # Always create a new mindmap when submitting a prompt
             mindmap.ask_for_initial_graph(query=query)
             st.experimental_rerun()
         else:

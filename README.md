@@ -35,31 +35,51 @@
 
 ---
 
-### 4. **Complex Reasoning Support**
+### 4. **Interactive Mind Maps**
 
-- **Question Decomposition:** Automatically break down complex or multi-hop questions for accurate answers.
-- **Agent-Based Reasoning:** Utilize advanced reasoning methods like ReAct and ReWOO to tackle intricate queries.
+- **AI-Powered Generation:** Create mind maps automatically from any topic or text using Mistral AI.
+- **Interactive Editing:**
+  - Expand nodes to explore related concepts
+  - Delete nodes and their connections
+  - Visual node selection and highlighting
+- **Dynamic Visualization:** Interactive graph layout with physics simulation for optimal readability.
 
 ---
 
 ### 5. **Data Visualization**
 
-- Automatically generate visualizations from data files to support research findings and presentations.
-
----
-
-## Planned Features
-
-- **RAG for Video Content:** Extend RAG capabilities to video content for research, including citation generation for specific timestamps and quotes.
+- Automatically generate visualizations from data files using Python and matplotlib.
+- Interactive plots and charts to support research findings and presentations.
 
 ---
 
 ## Technologies
 
-- **LLM:** Powered by Mistral LLM for state-of-the-art language understanding.
-- **Snowflake Cortex:** Ensures efficient data management and retrieval.
-- **Hybrid Retrieval Pipeline:** Combines traditional and AI-driven retrieval methods.
-- **Agent-Based Reasoning Frameworks:** ReAct, ReWOO, and others.
+### Frontend
+
+- **Streamlit:** Modern Python web framework for interactive UI components
+- **Streamlit-Agraph:** Interactive graph visualization for mind maps
+- **Custom CSS:** Responsive design with modern animations and styling
+
+### Backend
+
+- **Mistral AI:** Large language model for intelligent responses and mind map generation
+- **Snowflake Cortex:** Enterprise data platform for efficient RAG implementation
+- **Python 3.8+:** Core programming language
+  - matplotlib: Data visualization
+  - base64: PDF encoding and display
+  - typing: Type hints for better code reliability
+
+### Architecture
+
+- **Component-Based Design:**
+  - Modular components for chat, info panel, and mind maps
+  - Session state management for persistent data
+  - Error handling and graceful fallbacks
+- **RAG Pipeline:**
+  - Hybrid retrieval combining traditional and AI methods
+  - Source attribution and relevance scoring
+  - Multi-document context integration
 
 ---
 
@@ -69,7 +89,109 @@
 
 - Python 3.8 or higher
 - Required Python libraries (see `requirements.txt`)
+- Mistral AI API key
+- Snowflake account configuration
 
 ### Installation
 
 1. Clone the repository:
+
+```
+bash
+git clone https://github.com/stephanienguyen2020/project-x.git
+cd project-x
+```
+
+2. Create and activate a virtual environment:
+
+```
+bash
+python -m venv .venv
+source .venv/bin/activate # On Windows use: venv\Scripts\activate
+```
+
+3. Install dependencies:
+
+```
+bash
+pip install -r requirements.txt
+```
+
+4. Set up your environment variables:
+   Create a `.env` file in the project root using the `.env.example` file as a reference.
+
+5. Run the application:
+
+```
+bash
+streamlit run app.py
+```
+
+The application will be available at `http://localhost:8501`
+
+### Project Structure
+
+project-x/
+├── app.py # Main Streamlit application
+├── components/ # UI components
+│ ├── chatbot.py # Chat interface
+│ ├── info_panel.py # Information panel
+│ ├── mindmap.py # Mind map visualization
+│ └── settings.py # Settings interface
+├── services/ # Backend services
+│ └── snowflake_utils.py # Snowflake integration
+├── static/ # Static assets
+│ └── styles.css # Custom styling
+├── utils/ # Utility functions
+├── prompts/ # System prompts
+└── requirements.txt # Dependencies
+
+### Troubleshooting
+
+1. **Connection Issues**
+
+   - Verify your Mistral AI API key is correct
+   - Check Snowflake credentials and network access
+   - Ensure all required environment variables are set
+
+2. **Visualization Problems**
+
+   - Make sure matplotlib and streamlit-agraph are properly installed
+   - Check browser console for any JavaScript errors
+   - Try clearing browser cache and Streamlit cache
+
+3. **Performance Issues**
+   - Adjust Snowflake warehouse size if needed
+   - Consider reducing chunk size for large documents
+   - Monitor memory usage for large mind maps
+
+### Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+---
+
+## Support
+
+For support, please:
+
+1. Check the [Issues](https://github.com/stephanienguyen2020/project-x/issues) page
+2. Review existing documentation
+3. Create a new issue if needed
+
+---
+
+## Acknowledgments
+
+- Mistral AI for their powerful language model
+- Snowflake for enterprise data platform capabilities
+- Streamlit team for the excellent web framework
+- All contributors who have helped shape this project
