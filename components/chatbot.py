@@ -6,6 +6,8 @@ from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPER
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
 from datetime import datetime
+from services.snowflake_utils import SnowflakeConnector
+from config import SnowflakeConfig
 
 def init_chat_history():
     """Initialize chat history in session state"""
@@ -81,6 +83,12 @@ def render_chatbot():
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
     
+    # Add RAG status indicator
+    if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
+        st.sidebar.success("📚 Knowledge Base: Connected")
+    else:
+        st.sidebar.warning("📚 Knowledge Base: Disconnected")
+    
     # Chat input
     if prompt := st.chat_input("Message Mistral..."):
         # Add user message to chat
@@ -116,6 +124,14 @@ class Chatbot:
             raise ValueError("Please set your Mistral API key in the .env file")
         self.mistral_client = Mistral(api_key=api_key)
         
+        # Initialize Snowflake RAG
+        try:
+            snowflake_config = SnowflakeConfig()
+            self.snowflake = SnowflakeConnector(snowflake_config)
+        except Exception as e:
+            st.error(f"Error initializing Snowflake: {str(e)}")
+            self.snowflake = None
+
     def process_visualization_request(self, query: str) -> str:
         """Handle visualization requests"""
         try:
@@ -148,19 +164,46 @@ class Chatbot:
             return "Sorry, I encountered an error while creating the visualization."
 
     def process_query(self, query: str) -> str:
-        """Process user query"""
+        """Process user query using RAG if available, otherwise fall back to regular chat"""
         try:
-            response = self.mistral_client.chat.complete(
-                model="mistral-large-latest",
-                messages=[
-                    {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
-                    {"role": "user", "content": query}
-                ]
-            )
-            return response.choices[0].message.content
+            if self.snowflake:
+                # Get RAG context and prompt
+                prompt, source_paths = self.snowflake.create_prompt(query)
+                
+                # Use Mistral with RAG context
+                response = self.mistral_client.chat.complete(
+                    model="mistral-large-latest",
+                    messages=[
+                        {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+                
+                # Add source attribution if sources were found
+                answer = response.choices[0].message.content
+                if source_paths:
+                    sources_list = "\n".join([f"- {path}" for path in source_paths])
+                    answer += f"\n\nSources:\n{sources_list}"
+                
+                return answer
+            else:
+                # Fallback to regular chat if Snowflake is not available
+                return self._process_regular_query(query)
+                
         except Exception as e:
             st.error(f"Error processing query: {str(e)}")
             return "Sorry, I encountered an error while processing your request."
+
+    def _process_regular_query(self, query: str) -> str:
+        """Fallback method for regular chat without RAG"""
+        response = self.mistral_client.chat.complete(
+            model="mistral-large-latest",
+            messages=[
+                {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
+                {"role": "user", "content": query}
+            ]
+        )
+        return response.choices[0].message.content
 
     def __del__(self):
         """Cleanup resources"""

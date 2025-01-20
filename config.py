@@ -5,15 +5,15 @@ load_dotenv()
 
 @dataclass
 class SnowflakeConfig:
-    database: str = "LLM_DEMO"
-    schema: str = "PODCASTS"
-    search_service: str = "NEW_HUBERMAN"
-    warehouse: str = "tc_wh"
-    stage_name: str = "@huberman"
+    database: str = os.getenv("SNOWFLAKE_DATABASE", "PROJECTX")
+    schema: str = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC")
+    search_service: str = os.getenv("SNOWFLAKE_SEARCH_SERVICE", "CC_SEARCH_SERVICE_CS")
+    warehouse: str = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
+    stage_name: str = os.getenv("SNOWFLAKE_STAGE_NAME", "@docs")
 
 @dataclass
 class AppConfig:
-    available_models: tuple = ("mistral-large2", "mistral-7b", "llama3.1-8b")
+    available_models: tuple = ("mistral-large-latest")
     default_chunk_size: int = 4000
     default_chunk_overlap: int = 0
     default_search_limit: int = 7
