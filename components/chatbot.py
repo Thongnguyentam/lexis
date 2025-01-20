@@ -8,6 +8,7 @@ from typing import Optional
 from datetime import datetime
 from services.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
+from components.mindmap import MindMap
 
 def init_chat_history():
     """Initialize chat history in session state"""
@@ -132,6 +133,33 @@ class Chatbot:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
 
+    def is_mindmap_request(self, query: str) -> bool:
+        """Check if the query is requesting a mindmap"""
+        mindmap_keywords = [
+            'mind map', 'mindmap', 'knowledge graph', 'knowledgegraph',
+            'mindmaps', 'knowledge graphs', 'knowledgegraphs'
+        ]
+        return any(keyword in query.lower() for keyword in mindmap_keywords)
+
+    def process_mindmap_request(self, query: str) -> str:
+        """Handle mindmap generation requests"""
+        try:
+            # Initialize or get existing mindmap
+            mindmap = MindMap.load()
+            
+            # Generate new mindmap
+            mindmap.ask_for_initial_graph(query=query)
+            
+            # Store mindmap in session state for info panel
+            st.session_state.show_mindmap = True
+            st.session_state.current_mindmap = mindmap
+            
+            return "I've created a mind map based on your request. You can view and interact with it in the information panel. Click on nodes to expand or delete them!"
+            
+        except Exception as e:
+            st.error(f"Error creating mind map: {str(e)}")
+            return "Sorry, I encountered an error while creating the mind map."
+
     def process_visualization_request(self, query: str) -> str:
         """Handle visualization requests"""
         try:
@@ -166,7 +194,14 @@ class Chatbot:
     def process_query(self, query: str) -> str:
         """Process user query using RAG if available, otherwise fall back to regular chat"""
         try:
-            if self.snowflake:
+            # Check if it's a mindmap request
+            if self.is_mindmap_request(query):
+                return self.process_mindmap_request(query)
+            # Check if it's a visualization request
+            elif any(keyword in query.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
+                return self.process_visualization_request(query)
+            # Handle regular queries
+            elif self.snowflake:
                 # Get RAG context and prompt
                 prompt, source_paths = self.snowflake.create_prompt(query)
                 

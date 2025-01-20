@@ -1,5 +1,6 @@
 import streamlit as st
 import base64
+from components.mindmap import MindMap
 
 def render_info_panel():
     # Add custom styles for info panel title
@@ -13,8 +14,30 @@ def render_info_panel():
     
     st.markdown('<h1 class="info-panel-title">Information Panel</h1>', unsafe_allow_html=True)
     
-    # Display the currently selected PDF
-    if 'current_file' in st.session_state and st.session_state.get('current_file'):
+    # Check if we should display a mindmap
+    if st.session_state.get('show_mindmap', False) and st.session_state.get('current_mindmap'):
+        mindmap = st.session_state.current_mindmap
+        
+        # Create columns for the mindmap controls
+        if mindmap.nodes:  # Only show if there are nodes
+            st.subheader("Mind Map Controls")
+            clicked_node = mindmap.visualize()
+            
+            # Show node controls if a node is clicked
+            if clicked_node:
+                st.markdown("### Node Actions")
+                col1, col2 = st.columns(2)
+                with col1:
+                    if st.button("🔄 Expand", key=f"expand_{clicked_node}"):
+                        mindmap.ask_for_extended_graph(selected_node=clicked_node)
+                        st.experimental_rerun()
+                with col2:
+                    if st.button("🗑️ Delete", key=f"delete_{clicked_node}", type="primary"):
+                        mindmap._delete_node(clicked_node)
+                        st.experimental_rerun()
+    
+    # Display PDF content if available
+    elif 'current_file' in st.session_state and st.session_state.get('current_file'):
         try:
             # Get the selected file from uploaded_files
             current_file = st.session_state.uploaded_files.get(st.session_state['current_file'])
