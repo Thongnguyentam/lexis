@@ -169,7 +169,6 @@ class Chatbot:
             if self.snowflake:
                 # Get RAG context and prompt
                 prompt, source_paths = self.snowflake.create_prompt(query)
-                
                 # Use Mistral with RAG context
                 response = self.mistral_client.chat.complete(
                     model="mistral-large-latest",

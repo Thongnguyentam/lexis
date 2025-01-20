@@ -3,6 +3,7 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from components.chatbot import start_new_chat
+from utils.snowflake_upload import upload_to_stage
 
 def render_settings():
     # Load environment variables
@@ -165,6 +166,7 @@ def render_settings():
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state['current_file'] = uploaded_file.name
                 
+                upload_to_stage(uploaded_file)
                 st.sidebar.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
         except Exception as e:
             st.sidebar.error(f"Error processing uploaded file: {str(e)}")
