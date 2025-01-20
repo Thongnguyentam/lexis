@@ -20,8 +20,6 @@ from prompts.system_prompts import (
     MINDMAP_EXAMPLE_CONVERSATION
 )
 
-st.set_page_config(page_title="AI Mind Maps", layout="wide")
-
 # Update the color constants with better values
 COLOR = "#00CED1"
 FOCUS_COLOR = "#FF4500"
@@ -202,30 +200,15 @@ class MindMap:
         self.save()
 
     def _add_expand_delete_buttons(self, node) -> None:
-        """Add expand and delete buttons for a specific node in the sidebar.
-        Only called when a node is clicked.
+        """DEPRECATED: This method is no longer used as controls are now in info_panel"""
+        pass  # Controls moved to info_panel.py
 
-        Args:
-            node (str): The node to add buttons for
+    def visualize(self) -> None | str:
+        """Visualize the mindmap as an interactive graph using agraph.
+        
+        Returns:
+            Optional[str]: The clicked node if any
         """
-        st.sidebar.subheader(node)
-        cols = st.sidebar.columns(2)
-        cols[0].button(
-            label="Expand", 
-            on_click=self.ask_for_extended_graph,
-            key=f"expand_{node}",
-            kwargs={"selected_node": node}
-        )
-        cols[1].button(
-            label="Delete", 
-            on_click=self._delete_node,
-            type="primary",
-            key=f"delete_{node}",
-            args=(node,)
-        )
-
-    def visualize(self) -> None:
-        """Visualize the mindmap as an interactive graph using agraph."""
         try:
             selected = st.session_state.get("last_expanded")
             vis_nodes = [
@@ -239,7 +222,7 @@ class MindMap:
             ]
             vis_edges = [Edge(source=a, target=b) for a, b in self.edges]
             config = Config(width="100%",
-                          height=600,
+                          height=500,
                           directed=False, 
                           physics=True,
                           hierarchical=False,
@@ -248,12 +231,11 @@ class MindMap:
                             edges=vis_edges, 
                             config=config)
             
-            # Only show buttons for clicked node
-            if clicked_node:
-                self._add_expand_delete_buttons(clicked_node)
+            return clicked_node
             
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
+            return None
 
 def main():
     # will initialize the graph from session state

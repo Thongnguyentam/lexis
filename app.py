@@ -36,7 +36,7 @@ def main():
     render_settings()
     
     # Create the main layout with columns for chat and info panel
-    col1, col2 = st.columns([3, 2])
+    col1, col2 = st.columns([2, 2.5])
     
     # Render components in their respective columns
     with col1:

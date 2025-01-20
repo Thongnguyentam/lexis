@@ -76,7 +76,7 @@ def render_chatbot():
     
     init_chat_history()
     # Add title with custom class
-    st.markdown('<h1 class="chat-title">💬 Chat with Mistral</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="chat-title">💬 Chat with Lexis</h1>', unsafe_allow_html=True)
 
     # Display current chat messages
     messages = get_current_chat()
@@ -85,10 +85,10 @@ def render_chatbot():
             st.markdown(message["content"])
     
     # Add RAG status indicator
-    if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
-        st.sidebar.success("📚 Knowledge Base: Connected")
-    else:
-        st.sidebar.warning("📚 Knowledge Base: Disconnected")
+    # if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
+    #     st.sidebar.success("📚 Knowledge Base: Connected")
+    # else:
+    #     st.sidebar.warning("📚 Knowledge Base: Disconnected")
     
     # Chat input
     if prompt := st.chat_input("Message Mistral..."):
