@@ -1,4 +1,7 @@
 from dataclasses import dataclass
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 @dataclass
 class SnowflakeConfig:
@@ -14,3 +17,10 @@ class AppConfig:
     default_chunk_size: int = 4000
     default_chunk_overlap: int = 0
     default_search_limit: int = 7
+    
+SNOWFLAKE_ACCOUNT = os.getenv("SNOWFLAKE_ACCOUNT")
+SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER")
+SNOWFLAKE_PASSWORD = os.getenv("SNOWFLAKE_PASSWORD")
+SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE")
+SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_SCHEMA")
+SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")

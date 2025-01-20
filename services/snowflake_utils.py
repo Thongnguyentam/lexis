@@ -3,11 +3,13 @@ from snowflake.core import Root
 import pandas as pd
 import json
 from typing import List, Dict, Any
-from config import SnowflakeConfig
+from config import SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SnowflakeConfig
+from snowflake.snowpark import Session
 
 class SnowflakeConnector:
+    # check
     def __init__(self, config: SnowflakeConfig):
-        self.session = get_active_session()
+        self.session = get_snowpark_session()
         self.config = config
         self.root = Root(self.session)
         self.search_service = (
@@ -76,16 +78,50 @@ class SnowflakeConnector:
         """
         self.session.sql(query).collect()
 
-    def search_documents(self, query: str, limit: int) -> pd.DataFrame:
-        response = self.search_service.search(
-            query=query,
-            columns=["CHUNK", "EPISODE_NAME"],
-            limit=limit
-        ).to_json()
+    #check
+    def get_similar_chunks_search_service(
+        self, 
+        query, 
+        category_value: str = "ALL", 
+        columns: List[str] = ["chunk", "relative_path", "category"], 
+        num_chunks: int = 3
+    ):
+        if category_value == "ALL":
+            response = self.search_service.search(query, columns, limit=num_chunks)
+        else: 
+            filter_obj = {"@eq": {"category": category_value} }
+            response = self.search_service.search(query, columns, filter=filter_obj, limit=num_chunks)
         
-        json_data = json.loads(response) if isinstance(response, str) else response
-        return pd.json_normalize(json_data['results'])
+        return response.model_dump_json()  
 
+    # check
+    def create_prompt(self, query:str):
+        prompt_context = self.get_similar_chunks_search_service(query)
+  
+        prompt = f"""
+           You are an expert chat assistance that extracs information from the CONTEXT provided
+           between <context> and </context> tags.
+           When ansering the question contained between <question> and </question> tags
+           be concise and do not hallucinate. 
+           If you don´t have the information just say so.
+           Only anwer the question if you can extract it from the CONTEXT provideed.
+           
+           Do not mention the CONTEXT used in your answer.
+    
+           <context>          
+           {prompt_context}
+           </context>
+           <question>  
+           {query}
+           </question>
+           Answer: 
+           """
+
+        json_data = json.loads(prompt_context)
+        relative_paths = set(item['relative_path'] for item in json_data['results'])
+        
+        return prompt, relative_paths
+        
     def generate_response(self, model: str, prompt: str, context: str) -> str:
         query = f"""
         SELECT snowflake.cortex.complete(
@@ -101,3 +137,16 @@ class SnowflakeConnector:
         """
         result = self.session.sql(query).collect()
         return result[0]['RESPONSE']
+
+#check
+def get_snowpark_session():
+    """ Get or create a Snowpark session """
+    connection_parameters = {
+            "account": SNOWFLAKE_ACCOUNT,
+            "user": SNOWFLAKE_USER,
+            "password": SNOWFLAKE_PASSWORD,
+            "warehouse": SNOWFLAKE_WAREHOUSE,
+            "database": SNOWFLAKE_DATABASE,
+            "schema": SNOWFLAKE_SCHEMA
+        }
+    return Session.builder.configs(connection_parameters).create()
