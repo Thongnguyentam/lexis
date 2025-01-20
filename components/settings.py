@@ -85,30 +85,34 @@ def render_settings():
 
     st.sidebar.markdown("---")
     
-    # Initialize API key in session state if not exists
+    # API Key Section
+    st.sidebar.markdown('<h1>MISTRAL_API_KEY</h1>', unsafe_allow_html=True)
+    
+    # Get API key from environment or session state
     st.session_state.setdefault('mistral_api_key', default_api_key)
     
-    # API key input with password mask
-    api_key = st.sidebar.text_input(
-        "Mistral API Key",
-        value=st.session_state.mistral_api_key,
-        type="password",
-        help="Enter your Mistral API key here. You can also set it in the .env file.",
-        placeholder="sk-..."
-    )
+    # Create columns for API key input and save button
+    key_col1, key_col2 = st.sidebar.columns([4, 1])
     
-    # Save API key to session state when changed
-    if api_key != st.session_state.mistral_api_key:
-        st.session_state.mistral_api_key = api_key
-        if api_key:
-            st.sidebar.success("API key updated successfully!")
+    # Manual API key input with password mask
+    with key_col1:
+        manual_api_key = st.text_input(
+            "",
+            value=st.session_state.mistral_api_key,
+            type="password",
+            key="api_key_input",
+            label_visibility="collapsed"  # This removes the empty space above input
+        )
     
-    # Show API key status
-    if st.session_state.mistral_api_key:
-        st.sidebar.info("✓ API key is set")
-    else:
-        st.sidebar.warning("⚠️ API key is not set")
-  
+    # Save button
+    with key_col2:
+        if st.button("💾", use_container_width=True, key="save_api_key"):
+            if manual_api_key:
+                st.session_state.mistral_api_key = manual_api_key
+                st.sidebar.success("✓ API key saved!")
+            else:
+                st.sidebar.warning("⚠️ Please enter an API key")
+    
     st.sidebar.markdown("---")
     
     # File Collection section
