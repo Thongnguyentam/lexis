@@ -21,19 +21,14 @@ class DocumentReadingAgent(AssistantAgent):
             User's: '{message}'
             Retrieved relevant documents from the databases: {search_result}\n
 
-            *ONLY* Respond in this format:
+            - If there is no relevant information in the documents sufficient to answer user's message, *ONLY* reply 'no information'.
+            - If there is relevant information in the documents, *ONLY* Respond in this format:
             1. *Summary*: A brief summary of the findings from the database, explicitly referencing the sources.
             2. *Detailed Analysis*: An in-depth explanation based on the documents, with citations for each piece of information.
             3. *Citations*: A list of all referenced sources included in the relative path of the search results.
-
-            Example Response:
-            - *Summary*: Key insights from the documents include X, Y, and Z (sourced from 'relative_path_to_document.pdf').
-            - *Detailed Analysis*: The document 'relative_path_to_document.pdf' highlights that [detailed analysis of X]. Additionally, 'another_document.pdf' explains [detailed analysis of Y]. 
-            - *Citations*: 
-            1. relative_path_to_document.pdf
-            2. another_document.pdf
             """
         response = self.generate_reply(messages = [{"role": "assistant", "content": doc_message}])
+        response = response['content']
         return response
         
 def retrieve_relevant_documents(query: Annotated[str, "Search query for relevant documents"]) -> Annotated[str, "Search results"]:

@@ -7,7 +7,7 @@ from prompts.web_search_agent import WEB_SEARCH_DESCRIPTION, WEB_SEARCH_SYSTEM_M
 from utils.custom_actor_client import CustomApifyClient
 from autogen import AssistantAgent
 from datetime import datetime
-
+import arxiv
 class WebSearchAgent(AssistantAgent):
     def __init__(self):
         super().__init__(
@@ -150,7 +150,7 @@ def scrape_page(urls: list[Annotated[str, "The URL of the web page to scrape"]])
 
     return results
 
-def search_internet(query:str, max_results: Annotated[int, "Number of web to scrape"] = 3) -> list[Annotated[dict, "Scraped content"]]:
+def search_internet(query:str, max_results: Annotated[int, "Number of web to scrape"] = 3) -> Annotated[str, "Scraped content"]:
     """
     Search Skill
     Search Tool
@@ -167,7 +167,53 @@ def search_internet(query:str, max_results: Annotated[int, "Number of web to scr
         urls = [{"url": r['href']} for r in ddgs.text(query, max_results=max_results)]
         #print(f"============ SCRAPING URLS: {urls} =============== \n")
         res = scrape_page(urls=urls)
-        return res
+        return str(res)
 
 def get_current_date_time() -> Annotated[str, "Current date and time"]:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+def fetch_arxiv_papers(
+    title: Annotated[str, "Search keyword for the relevant papers or articles"], 
+    papers_count: Annotated[int, "Number of papers to fetch"]
+) -> Annotated[list, "List of papers"]:
+    """
+    Search Papers Tool
+    Arxiv Tool
+    Performs a search for papers and articles on Arxiv using the arxiv package.
+
+    :param title: str, search keyword for the relevant papers or articles.
+    :param papers_count: int, number of papers to fetch.
+    :return: list, search results.
+    """
+    
+    search_query = f'all:"{title}"'
+    search = arxiv.Search(
+        query=search_query,
+        max_results=papers_count,
+        sort_by=arxiv.SortCriterion.SubmittedDate,
+        sort_order=arxiv.SortOrder.Descending
+    )
+
+    papers = []
+    # Use the Client for searching
+    client = arxiv.Client()
+    
+    # Execute the search
+    search = client.results(search)
+
+    for result in search:
+        paper_info = {
+                'title': result.title,
+                'authors': [author.name for author in result.authors],
+                'summary': result.summary,
+                'published': result.published,
+                'journal_ref': result.journal_ref,
+                'doi': result.doi,
+                'primary_category': result.primary_category,
+                'categories': result.categories,
+                'pdf_url': result.pdf_url,
+                'arxiv_url': result.entry_id
+            }
+        papers.append(paper_info)
+
+    return papers

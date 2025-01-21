@@ -16,23 +16,3 @@ class UserProxy(UserProxyAgent):
         self.register_for_execution(name="search_internet")(search_internet)
         self.register_for_execution(name="retrieve_relevant_documents")(retrieve_relevant_documents)
         
-        
-class IntentClassifier(AssistantAgent):
-    def __init__(self):
-        super().__init__(
-            name="intent_classifier",
-            llm_config={"config_list": CONFIG_LIST},
-            system_message="""
-            Your role is to classify whether to use web search tool:
-                - If the search result tells that the retrieved documents do not provide direct information about user's message, reply 'yes'. 
-                - Otherwise, if the documents contains relevant information or sufficient information to answer user's message, reply 'no'. 
-                
-            **ONLY** respond 'yes' or 'no'.
-            """
-        )
-        
-    def classify(self, message: str) -> str:
-        # process classification on the intent
-        response = self.generate_reply(messages = [{"role": "assistant", "content": message}])
-        return response
-    

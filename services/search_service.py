@@ -4,7 +4,7 @@ import re
 
 from assistance.critics_agent import CriticAgent
 from assistance.documents_reading_agent import DocumentReadingAgent
-from assistance.user_proxy import IntentClassifier, UserProxy
+from assistance.user_proxy import UserProxy
 from assistance.web_search_agent import WebSearchAgent
 from assistance.writer_agent import WriterAgent
 from prompts.critics import REFLECTION_MESSAGE
@@ -97,13 +97,12 @@ def search(message: str):
         trigger=writer_agent
     )
     
-    res = document_reading_agent.get_relevant_information(message=message)
-    search_res = res['content'] 
-    print("search_res:", search_res)
+    search_res = document_reading_agent.get_relevant_information(message=message)
+    if search_res and (search_res == "" or "no info" in search_res):
+        search_res = "no related documents found"
+        
     web_search_prompt = create_web_search_prompt(search_res=search_res, message=message)
-
     is_search = web_search_intent.classify(web_search_prompt)
-    is_search = is_search['content']
     print("is_search: ", is_search)
     chat_queue = []
     if is_search and 'yes' in is_search:
