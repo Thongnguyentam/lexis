@@ -8,6 +8,7 @@ import chromadb
 import os
 import uuid
 import requests
+import re
 from datetime import datetime, timedelta
 
 class VideoRAG:
@@ -78,11 +79,23 @@ class VideoRAG:
             response = requests.get(oembed_url)
             data = response.json()
             
+            # Get video page to parse upload date
             video_url = f"https://www.youtube.com/watch?v={video_id}"
             video_page = requests.get(video_url)
             
-            # Default to current date if upload date not found
-            upload_date = datetime.now()
+            # Try to parse upload date from video page
+            upload_date = datetime.now()  # fallback
+            if video_page.status_code == 200:
+                try:
+                    # Look for uploadDate in the page content
+                    date_match = re.search(r'"uploadDate":"([^"]+)"', video_page.text)
+                    if date_match:
+                        # Parse ISO 8601 format with timezone
+                        iso_date = date_match.group(1)
+                        # Extract just the date part (YYYY-MM-DD) from the ISO timestamp
+                        upload_date = datetime.strptime(iso_date.split('T')[0], "%Y-%m-%d")
+                except Exception as e:
+                    st.warning(f"Could not parse upload date: {e}")
             
             # Store video info in session state for info panel
             st.session_state.current_video = {
@@ -90,7 +103,8 @@ class VideoRAG:
                 "title": data.get("title", "Untitled Video"),
                 "author": data.get("author_name", "Unknown Author"),
                 "embed_html": data.get("html", ""),
-                "url": video_url
+                "url": video_url,
+                "upload_date": upload_date
             }
             
             return {
@@ -200,6 +214,30 @@ class VideoRAG:
             st.error(f"Error adding video to knowledge base: {e}")
             return False
 
+    def format_apa_citation(self, metadata: Dict) -> Tuple[str, str]:
+        """Format video metadata as APA citation.
+        
+        Args:
+            metadata: Dictionary containing video metadata
+            
+        Returns:
+            Tuple of (full citation, parenthetical citation)
+        """
+        # Format the date string
+        date_str = metadata['upload_date'].strftime("%Y, %B %d")
+        year_str = metadata['upload_date'].strftime("%Y")
+        
+        # Create full citation
+        full_citation = (
+            f"{metadata['author']}. ({date_str}). "
+            f"*{metadata['title']}* [Video]. YouTube. {metadata['url']}"
+        )
+        
+        # Create parenthetical citation
+        parenthetical = f"({metadata['author']}, {year_str})"
+        
+        return full_citation, parenthetical
+
     def query_video(self, question: str, video_id: Optional[str] = None) -> str:
         """Query the video knowledge base using Mistral, returning summary and quotes."""
         try:
@@ -211,7 +249,7 @@ class VideoRAG:
                 where=where_clause
             )
             
-            # Get video metadata
+            # Get video metadata and format citations
             metadata = self.video_metadata.get(video_id, {
                 "title": "Untitled Video",
                 "author": "Unknown Author",
@@ -219,8 +257,7 @@ class VideoRAG:
                 "url": f"https://www.youtube.com/watch?v={video_id}"
             })
             
-            # Format upload date for APA citation
-            upload_date_str = metadata['upload_date'].strftime("%Y, %B %d")
+            full_citation, parenthetical = self.format_apa_citation(metadata)
             
             # Prepare context with timestamps
             context_entries = []
@@ -234,7 +271,10 @@ class VideoRAG:
             prompt = f"""Based on the following video transcript excerpt, first provide a 1-2 sentence summary, then list the relevant exact quotes with their timestamps.
 
 Video Information:
-{metadata['author']} ({upload_date_str}). *{metadata['title']}* [Video]. YouTube. {metadata['url']}
+{full_citation}
+
+Example APA citation format:
+Harvard University. (2019, August 28). Soft robotic gripper for jellyfish [Video]. YouTube. https://www.youtube.com/watch?v=guRoWTYfxMs
 
 Transcript context:
 {context}
@@ -244,7 +284,7 @@ Question: {question}
 Required format:
 First: Brief summary (1-2 sentences)
 Then: Supporting quotes in this format:
-"[Complete sentence or statement from transcript]" [MM:SS-MM:SS] ({metadata['author']}, {upload_date_str})
+"[Complete sentence or statement from transcript]" [MM:SS-MM:SS] {parenthetical}
 
 IMPORTANT:
 - Start with a concise summary
@@ -253,7 +293,8 @@ IMPORTANT:
 - Ensure quotes include full context and meaning
 - Present quotes in chronological order
 - Keep quotes verbatim from the transcript
-- Do not truncate sentences"""
+- Do not truncate sentences
+- Format citations exactly like the example above"""
 
             # Get response from Mistral with stronger system prompt
             response = self.mistral_client.chat.complete(
