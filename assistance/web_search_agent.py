@@ -123,6 +123,20 @@ def scrape_page(urls: list[Annotated[str, "The URL of the web page to scrape"]])
             "    return data\n"
         ),
         "proxyConfiguration": {"useApifyProxy": True, "groups": ["Datacenter"]},
+        "launchContext": {
+            "launchOptions": {
+                "headless": True,
+                "args": [
+                    "--disable-web-security",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-accelerated-2d-canvas",
+                    "--disable-gpu",
+                    "--window-size=1920x1080"
+                ]
+            }
+        }
     }
 
     # Run the Actor and wait for it to finish
@@ -136,7 +150,7 @@ def scrape_page(urls: list[Annotated[str, "The URL of the web page to scrape"]])
 
     return results
 
-def search_internet(query:str, max_results:int = 3) -> list[Annotated[dict, "Scraped content"]]:
+def search_internet(query:str, max_results: Annotated[int, "Number of web to scrape"] = 3) -> list[Annotated[dict, "Scraped content"]]:
     """
     Search Skill
     Search Tool

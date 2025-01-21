@@ -13,5 +13,5 @@ CRITIC_DESCRIPTION="An agent that consults on researching information from autho
 REFLECTION_MESSAGE = """
 Reflect and provide critique on the above writing of a researcher on user's requested topic. \
 Your feedback MUST be based solely on the related context provided below and should not include general feedback or suggestions unrelated to context. \
-Ask the partner to revise the response again based on your feedback, ensuring their research information relevant to the requested topic. \
+Ask the partner to revise the response again based on your feedback, ensuring their research information does not contain unnecessary content and relevant to the requested topic. \
 """

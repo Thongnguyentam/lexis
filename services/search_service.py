@@ -11,22 +11,14 @@ from prompts.critics import REFLECTION_MESSAGE
 
 def create_prompt(context: str, message: str):
    prompt = f"""
-   You are an expert chat assistance that extracts information from the CONTEXT provided between <context> and </context> tags..
-   When ansering the question contained between <question> and </question> tags be concise and do not hallucinate. 
-   If you don´t have the information just say so.
-   Only anwer the question if you can extract it from the CONTEXT provideed.
+   Use the following pieces of retrieved context to answer the message.
+   If you don´t have the information just say so and suggest from your general knowledge.
+   ** DO NOT ** include sources that do not contain information about the user's message. 
 
-   Do not mention the CONTEXT used in your answer. Respond in this format:
+   **ONLY** respond in this format:
    1. Summary: A brief summary of the findings from the database, explicitly referencing the sources.
    2. Detailed Analysis: An in-depth explanation based on the documents, with citations for each piece of information.
-   3. Citations: A list of all referenced sources included in the relative path of the search results.
-
-   Example Response:
-   - Summary: Key insights from the documents include X, Y, and Z (sourced from 'relative_path_to_document.pdf').
-   - Detailed Analysis: The document 'relative_path_to_document.pdf' highlights that [detailed analysis of X]. Additionally, 'another_document.pdf' explains [detailed analysis of Y]. 
-   - Citations: 
-      1. relative_path_to_document.pdf
-      2. another_document.pdf
+   3. Citations: A list of all referenced sources included in the relative path of the search results (If applicable).
 
    <context>          
    {context}
@@ -43,8 +35,10 @@ def create_web_search_prompt(search_res: str, message:str):
         User's message: '{message}'
         Search Result: {search_res}
         
-        If search result is empty or the search result tells that the retrieved documents do not provide direct information about user's message, reply 'yes'. 
-        Otherwise, if the documents contains relevant information, reply 'no'. 
+        If there is no search result, or the search result tells that the retrieved documents is not sufficient or do not provide direct information about user's message, reply 'yes'. 
+        Otherwise, if the documents contains relevant information or sufficient information to answer user's message, reply 'no'. 
+        
+        **ONLY** Respond 'yes' or 'no'.
     """
 
 def reflection_message(recipient, messages, sender, config):
@@ -107,16 +101,15 @@ def search(message: str):
     search_res = res['content'] 
     print("search_res:", search_res)
     web_search_prompt = create_web_search_prompt(search_res=search_res, message=message)
+
     is_search = web_search_intent.classify(web_search_prompt)
     is_search = is_search['content']
     print("is_search: ", is_search)
-    
     chat_queue = []
     if is_search and 'yes' in is_search:
-        chat_queue.append(generate_request_to_recipient(agent=web_search_agent, message= message, max_turns=2))
-
+        chat_queue.append(generate_request_to_recipient(agent=web_search_agent, message= message, max_turns=2, summary_method="reflection_with_llm"))
     aggregate_prompt = create_prompt(context=search_res, message=message)
     chat_queue.append(generate_request_to_recipient(agent=writer_agent,message=aggregate_prompt, max_turns=2))
 
     res = user_proxy.initiate_chats(chat_queue=chat_queue)
-    return res 
+    return res[-1].chat_history[-1]['content'] 

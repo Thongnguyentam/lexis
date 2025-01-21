@@ -1,4 +1,3 @@
-from snowflake.snowpark.context import get_active_session
 from snowflake.core import Root
 import pandas as pd
 import json
