@@ -10,7 +10,7 @@ from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
 from components.videorag import VideoRAG
-
+import codecs
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
     Creates a new chat session if none exists, with a timestamp-based ID
@@ -75,7 +75,7 @@ def start_new_chat():
             }
         ]
     }
-    st.experimental_rerun()
+    st.rerun()
 
 def render_chatbot():
     """Render the main chatbot interface including:

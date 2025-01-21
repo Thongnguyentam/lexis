@@ -58,7 +58,7 @@ def render_settings():
             )
             if selected_chat_id != st.session_state.current_chat_id:
                 st.session_state.current_chat_id = selected_chat_id
-                st.experimental_rerun()
+                st.rerun()
         
         # Action buttons row
         col1, col2 = st.sidebar.columns(2)
@@ -68,11 +68,11 @@ def render_settings():
                 if st.button("💾", key="save_edit", use_container_width=True):
                     st.session_state.chats[st.session_state.current_chat_id]["title"] = edited_name
                     st.session_state.edit_mode = False
-                    st.experimental_rerun()
+                    st.rerun()
             else:
                 if st.button("✏️", key="edit_conv", use_container_width=True):
                     st.session_state.edit_mode = True
-                    st.experimental_rerun()
+                    st.rerun()
         
         with col2:
             if st.button("🗑️", key="delete_conv", use_container_width=True):
@@ -82,7 +82,7 @@ def render_settings():
                         start_new_chat()
                     else:
                         st.session_state.current_chat_id = next(iter(st.session_state.chats))
-                    st.experimental_rerun()
+                    st.rerun()
 
     st.sidebar.markdown("---")
     
@@ -121,17 +121,17 @@ def render_settings():
     col1, col2 = st.sidebar.columns(2)
     
     # Initialize file search state and available files if not exists
-    st.session_state.setdefault('show_file_search', False)
+    # st.session_state.setdefault('show_file_search', False)
     st.session_state.setdefault('available_files', [])
     
-    with col1:
-        if st.button("🔍 All", key="search_all", use_container_width=True):
-            st.session_state['search_mode'] = 'all_files'
-            st.session_state['show_file_search'] = False
+    # with col1:
+    #     if st.button("🔍 All", key="search_all", use_container_width=True):
+    #         st.session_state['search_mode'] = 'all_files'
+    #         st.session_state['show_file_search'] = False
     
-    with col2:
-        if st.button("🔍 in File(s)", key="search_files", use_container_width=True):
-            st.session_state['show_file_search'] = not st.session_state['show_file_search']
+    # with col2:
+    #     if st.button("🔍 in File(s)", key="search_files", use_container_width=True):
+    #         st.session_state['show_file_search'] = not st.session_state['show_file_search']
     
     # Show file selection dropdown if search in files is clicked
     if st.session_state['show_file_search']:

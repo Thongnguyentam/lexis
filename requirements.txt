@@ -12,6 +12,7 @@ duckduckgo_search==7.0.2
 apify_client==1.8.1
 flaml[automl]
 snowflake==1.0.2
+snowflake-snowpark-python==1.26.0
 llmlingua==0.2.2
 embedchain
 youtube-transcript-api>=0.6.1

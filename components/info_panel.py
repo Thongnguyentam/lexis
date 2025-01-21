@@ -116,12 +116,12 @@ def render_info_panel():
                     # Expand button to grow the mind map from selected node
                     if st.button("🔄 Expand", key=f"expand_{clicked_node}", use_container_width=True):
                         mindmap.ask_for_extended_graph(selected_node=clicked_node)
-                        st.experimental_rerun()
+                        st.rerun()
                 with col2:
                     # Delete button to remove the selected node and its children
                     if st.button("🗑️ Delete", key=f"delete_{clicked_node}", type="primary", use_container_width=True):
                         mindmap._delete_node(clicked_node)
-                        st.experimental_rerun()
+                        st.rerun()
                 st.markdown("---")  # Visual separator
     
     # PDF Display Section
