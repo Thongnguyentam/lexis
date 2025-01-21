@@ -65,17 +65,17 @@ def render_settings():
         
         with col1:
             if st.session_state.edit_mode:
-                if st.button("💾 Save", key="save_edit", use_container_width=True):
+                if st.button("💾", key="save_edit", use_container_width=True):
                     st.session_state.chats[st.session_state.current_chat_id]["title"] = edited_name
                     st.session_state.edit_mode = False
                     st.experimental_rerun()
             else:
-                if st.button("✏️ Edit", key="edit_conv", use_container_width=True):
+                if st.button("✏️", key="edit_conv", use_container_width=True):
                     st.session_state.edit_mode = True
                     st.experimental_rerun()
         
         with col2:
-            if st.button("🗑️ Delete", key="delete_conv", use_container_width=True):
+            if st.button("🗑️", key="delete_conv", use_container_width=True):
                 if st.session_state.current_chat_id in st.session_state.chats:
                     del st.session_state.chats[st.session_state.current_chat_id]
                     if not st.session_state.chats:
@@ -86,30 +86,34 @@ def render_settings():
 
     st.sidebar.markdown("---")
     
-    # Initialize API key in session state if not exists
+    # API Key Section
+    st.sidebar.markdown('<h1>MISTRAL_API_KEY</h1>', unsafe_allow_html=True)
+    
+    # Get API key from environment or session state
     st.session_state.setdefault('mistral_api_key', default_api_key)
     
-    # API key input with password mask
-    api_key = st.sidebar.text_input(
-        "Mistral API Key",
-        value=st.session_state.mistral_api_key,
-        type="password",
-        help="Enter your Mistral API key here. You can also set it in the .env file.",
-        placeholder="sk-..."
-    )
+    # Create columns for API key input and save button
+    key_col1, key_col2 = st.sidebar.columns([4, 1])
     
-    # Save API key to session state when changed
-    if api_key != st.session_state.mistral_api_key:
-        st.session_state.mistral_api_key = api_key
-        if api_key:
-            st.sidebar.success("API key updated successfully!")
+    # Manual API key input with password mask
+    with key_col1:
+        manual_api_key = st.text_input(
+            "",
+            value=st.session_state.mistral_api_key,
+            type="password",
+            key="api_key_input",
+            label_visibility="collapsed"
+        )
     
-    # Show API key status
-    if st.session_state.mistral_api_key:
-        st.sidebar.info("✓ API key is set")
-    else:
-        st.sidebar.warning("⚠️ API key is not set")
-  
+    # Save button
+    with key_col2:
+        if st.button("💾", use_container_width=True, key="save_api_key"):
+            if manual_api_key:
+                st.session_state.mistral_api_key = manual_api_key
+                st.sidebar.success("✓ API key saved!")
+            else:
+                st.sidebar.warning("⚠️ Please enter an API key")
+    
     st.sidebar.markdown("---")
     
     # File Collection section
@@ -121,12 +125,12 @@ def render_settings():
     st.session_state.setdefault('available_files', [])
     
     with col1:
-        if st.button("Search All", key="search_all", use_container_width=True):
+        if st.button("🔍 All", key="search_all", use_container_width=True):
             st.session_state['search_mode'] = 'all_files'
             st.session_state['show_file_search'] = False
     
     with col2:
-        if st.button("Search in File(s)", key="search_files", use_container_width=True):
+        if st.button("🔍 in File(s)", key="search_files", use_container_width=True):
             st.session_state['show_file_search'] = not st.session_state['show_file_search']
     
     # Show file selection dropdown if search in files is clicked

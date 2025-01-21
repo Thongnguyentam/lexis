@@ -157,8 +157,66 @@ h3 {
   margin-top: 1rem;
 }
 
+.info-panel-title {
+  margin-top: 15px !important;
+}
+
+/* Mind map button styles */
+.mindmap-controls .stButton {
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.mindmap-controls .stButton > button {
+  width: 100%;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+/* Expand button specific styles */
+.mindmap-controls [data-testid="baseButton-secondary"] {
+  background-color: #00ced1 !important;
+  color: white !important;
+  border: none !important;
+}
+
+/* Delete button specific styles */
+.mindmap-controls .stButton > button[kind="primary"] {
+  background-color: #ff4500 !important;
+  border: none !important;
+}
+
+/* Hover effects */
+.mindmap-controls .stButton > button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
 /* Chat title styles */
 .chat-title {
   margin-top: 1rem !important;
   margin-bottom: 1rem;
+}
+
+/* Add this to target the delete button */
+section[data-testid="stSidebar"]
+  button[kind="secondary"]:has(div:contains("🗑️")),
+section[data-testid="stSidebar"]
+  [data-testid="baseButton-secondary"]:has(div:contains("🗑️")) {
+  background-color: #ff4500 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+section[data-testid="stSidebar"]
+  button[kind="secondary"]:has(div:contains("🗑️")):hover,
+section[data-testid="stSidebar"]
+  [data-testid="baseButton-secondary"]:has(div:contains("🗑️")):hover {
+  background-color: #cc3700 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
 }

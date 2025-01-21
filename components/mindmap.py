@@ -1,4 +1,8 @@
 from __future__ import annotations
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent))
+
 import re
 from typing import Optional, Tuple, List, Union, Literal
 import base64
@@ -10,86 +14,54 @@ from mistralai import Mistral
 from dataclasses import dataclass, asdict
 from textwrap import dedent
 from streamlit_agraph import agraph, Node, Edge, Config
+from prompts.system_prompts import (
+    MINDMAP_SYSTEM_PROMPT,
+    MINDMAP_INSTRUCTION_PROMPT,
+    MINDMAP_EXAMPLE_CONVERSATION
+)
 
-# set title of page (will be seen in tab) and the width
-st.set_page_config(page_title="AI Mind Maps", layout="wide")
+NODE_COLOR = "#00CED1" 
+SELECTED_NODE_COLOR = "#FF4500"
 
-# Update the color constants with better values
-COLOR = "#00CED1"  # Dark cyan
-FOCUS_COLOR = "#FF4500"  # Orange-red
-
-# Initialize Mistral client instead of OpenAI
 mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
 
 @dataclass
 class Message:
-    """A class that represents a message in a Mistral conversation.
+    """Represents a message in a Mistral conversation.
+    
+    Attributes:
+        content (str): The text content of the message
+        role (Literal["user", "system", "assistant"]): The role of the message sender
     """
     content: str
     role: Literal["user", "system", "assistant"]
 
-    # is a built-in method for dataclasses
-    # called after the __init__ method
     def __post_init__(self):
+        """Post-initialization hook to clean up message content.
+        Removes indentation and extra whitespace."""
         self.content = dedent(self.content).strip()
 
 START_CONVERSATION = [
-    Message("""
-        You are a useful mind map/undirected graph-generating AI that can generate mind maps
-        based on any input or instructions.
-    """, role="system"),
-    Message("""
-        You have the ability to perform the following actions given a request
-        to construct or modify a mind map/graph:
-
-        1. add(node1, node2) - add an edge between node1 and node2
-        2. delete(node1, node2) - delete the edge between node1 and node2
-        3. delete(node1) - deletes every edge connected to node1
-
-        Note that the graph is undirected and thus the order of the nodes does not matter
-        and duplicates will be ignored. Another important note: the graph should be sparse,
-        with many nodes and few edges from each node. Too many edges will make it difficult 
-        to understand and hard to read. The answer should only include the actions to perform, 
-        nothing else. If the instructions are vague or even if only a single word is provided, 
-        still generate a graph of multiple nodes and edges that that could makes sense in the 
-        situation. Remember to think step by step and debate pros and cons before settling on 
-        an answer to accomplish the request as well as possible.
-
-        Here is my first request: Add a mind map about machine learning.
-    """, role="user"),
-    Message("""
-        add("Machine learning","AI")
-        add("Machine learning", "Reinforcement learning")
-        add("Machine learning", "Supervised learning")
-        add("Machine learning", "Unsupervised learning")
-        add("Supervised learning", "Regression")
-        add("Supervised learning", "Classification")
-        add("Unsupervised learning", "Clustering")
-        add("Unsupervised learning", "Anomaly Detection")
-        add("Unsupervised learning", "Dimensionality Reduction")
-        add("Unsupervised learning", "Association Rule Learning")
-        add("Clustering", "K-means")
-        add("Classification", "Logistic Regression")
-        add("Reinforcement learning", "Proximal Policy Optimization")
-        add("Reinforcement learning", "Q-learning")
-    """, role="assistant"),
-    Message("""
-        Remove the parts about reinforcement learning and K-means.
-    """, role="user"),
-    Message("""
-        delete("Reinforcement learning")
-        delete("Clustering", "K-means")
-    """, role="assistant")
+    Message(MINDMAP_SYSTEM_PROMPT, role="system"),
+    Message(MINDMAP_INSTRUCTION_PROMPT, role="user"),
 ]
 
+# Add example conversation messages
+for msg in MINDMAP_EXAMPLE_CONVERSATION:
+    START_CONVERSATION.append(Message(msg["content"], role=msg["role"]))
+
 def ask_mistral(conversation: List[Message]) -> Tuple[str, List[Message]]:
-    """Ask Mistral to generate or modify the mind map.
+    """Send conversation to Mistral AI and get response.
     
     Args:
-        conversation (List[Message]): The conversation history.
+        conversation (List[Message]): List of previous messages in the conversation
         
     Returns:
-        Tuple[str, List[Message]]: The response text and updated conversation.
+        Tuple[str, List[Message]]: 
+            - Generated response text
+            - Updated conversation history including the new response
+            
+    Note: Uses mistral-large-latest model for optimal mind map generation
     """
     response = mistral_client.chat.complete(
         model="mistral-large-latest",
@@ -102,36 +74,60 @@ def ask_mistral(conversation: List[Message]) -> Tuple[str, List[Message]]:
     return msg.content, conversation + [msg]
 
 class MindMap:
-    """A class that represents a mind map as a graph.
+    """Represents and manages an interactive mind map visualization.
+    
+    The mind map is stored as a graph structure with nodes and edges.
+    Supports operations like:
+    - Creating new mind maps from text prompts
+    - Expanding existing nodes
+    - Deleting nodes and their connections
+    - Visualizing the graph interactively
     """
     
     def __init__(self, edges: Optional[List[Tuple[str, str]]]=None, nodes: Optional[List[str]]=None) -> None:
+        """Initialize a new mind map.
+        
+        Args:
+            edges (Optional[List[Tuple[str, str]]]): List of node pairs representing connections
+            nodes (Optional[List[str]]): List of node labels/content
+        """
         self.edges = [] if edges is None else edges
         self.nodes = [] if nodes is None else nodes
         self.save()
 
     @classmethod
     def load(cls) -> MindMap:
-        """Load mindmap from session state if it exists
+        """Load existing mind map from session state or create new one.
         
-        Returns: Mindmap
+        Returns:
+            MindMap: Retrieved or newly created mind map instance
         """
         if "mindmap" in st.session_state:
             return st.session_state["mindmap"]
         return cls()
 
     def save(self) -> None:
-        # save to session state
+        """Save current mind map state to session storage for persistence."""
         st.session_state["mindmap"] = self
 
     def is_empty(self) -> bool:
+        """Check if mind map has any content.
+        
+        Returns:
+            bool: True if mind map has no edges, False otherwise
+        """
         return len(self.edges) == 0
     
     def ask_for_initial_graph(self, query: str) -> None:
-        """Ask Mistral to construct a graph from scratch.
-
+        """Generate a new mind map from scratch based on user query.
+        
         Args:
-            query (str): The query to ask Mistral about.
+            query (str): User's text prompt describing desired mind map content
+            
+        Process:
+        1. Send query to Mistral AI with mind map generation prompt
+        2. Parse response to extract node relationships
+        3. Update graph structure with new nodes and edges
         """
         conversation = START_CONVERSATION + [
             Message(f"""
@@ -145,11 +141,13 @@ class MindMap:
         self.parse_and_include_edges(output, replace=True)
 
     def ask_for_extended_graph(self, selected_node: Optional[str]=None, text: Optional[str]=None) -> None:
-        """Ask Mistral to extend the graph.
-
+        """Expand the mind map from a selected node or based on text instruction.
+        
         Args:
-            selected_node (Optional[str]): Node to expand from
+            selected_node (Optional[str]): Node to expand with new connections
             text (Optional[str]): Text description of how to modify the graph
+            
+        Note: At least one of selected_node or text must be provided
         """
         if (selected_node is None and text is None):
             return
@@ -168,19 +166,22 @@ class MindMap:
         self.parse_and_include_edges(output, replace=False)
 
     def parse_and_include_edges(self, output: str, replace: bool=True) -> None:
-        """Parse output from Mistral and include the edges in the graph.
-
+        """Parse Mistral's output and update the graph structure.
+        
         Args:
-            output (str): output from Mistral to be parsed
-            replace (bool, optional): if True, replace all edges with the new ones, 
-                otherwise add to existing edges. Defaults to True.
+            output (str): Raw text output from Mistral containing add/delete commands
+            replace (bool): If True, replace existing edges; if False, add to them
+            
+        Process:
+        1. Extract add/delete commands using regex
+        2. Process node and edge modifications
+        3. Update graph while maintaining consistency
+        4. Remove any duplicate edges
         """
 
-        # Regex patterns
         pattern1 = r'(add|delete)\("([^()"]+)",\s*"([^()"]+)"\)'
         pattern2 = r'(delete)\("([^()"]+)"\)'
 
-        # Find all matches in the text
         matches = re.findall(pattern1, output) + re.findall(pattern2, output)
 
         new_edges = []
@@ -207,8 +208,6 @@ class MindMap:
         else:
             edges = self.edges + new_edges
 
-        # make sure edges aren't added twice
-        # and remove nodes/edges that were deleted
         added = set()
         for edge in edges:
             nodes = frozenset(edge)
@@ -221,10 +220,15 @@ class MindMap:
         self.save()
 
     def _delete_node(self, node) -> None:
-        """Delete a node and all edges connected to it.
-
+        """Remove a node and all its connections from the graph.
+        
         Args:
-            node (str): The node to delete.
+            node (str): Label of the node to delete
+            
+        Effects:
+        - Removes all edges connected to the node
+        - Updates node list to reflect changes
+        - Records deletion in conversation history
         """
         self.edges = [e for e in self.edges if node not in frozenset(e)]
         self.nodes = list(set([n for e in self.edges for n in e]))
@@ -234,27 +238,20 @@ class MindMap:
         ))
         self.save()
 
-    def _add_expand_delete_buttons(self, node) -> None:
-        st.sidebar.subheader(node)
-        cols = st.sidebar.columns(2)
-        cols[0].button(
-            label="Expand", 
-            on_click=self.ask_for_extended_graph,
-            key=f"expand_{node}",
-            # pass to on_click (self.ask_for_extended_graph)
-            kwargs={"selected_node": node}
-        )
-        cols[1].button(
-            label="Delete", 
-            on_click=self._delete_node,
-            type="primary",
-            key=f"delete_{node}",
-            # pass on to _delete_node
-            args=(node,)
-        )
-
-    def visualize(self) -> None:
-        """Visualize the mindmap as an interactive graph using agraph."""
+    def visualize(self) -> None | str:
+        """Create interactive visualization of the mind map.
+        
+        Returns:
+            Optional[str]: Label of clicked node if any, None otherwise
+            
+        Features:
+        - Nodes sized based on selection status
+        - Color coding for regular vs selected nodes
+        - Interactive click handling
+        - Automatic layout with physics simulation
+        
+        Note: Uses streamlit-agraph for rendering
+        """
         try:
             selected = st.session_state.get("last_expanded")
             vis_nodes = [
@@ -262,13 +259,13 @@ class MindMap:
                     id=n, 
                     label=n, 
                     size=10+10*(n==selected), 
-                    color=COLOR if n != selected else FOCUS_COLOR
+                    color=NODE_COLOR if n != selected else SELECTED_NODE_COLOR
                 ) 
                 for n in self.nodes
             ]
             vis_edges = [Edge(source=a, target=b) for a, b in self.edges]
             config = Config(width="100%",
-                          height=600,
+                          height=500,
                           directed=False, 
                           physics=True,
                           hierarchical=False,
@@ -277,26 +274,21 @@ class MindMap:
                             edges=vis_edges, 
                             config=config)
             
-            # Create a set of nodes that have had buttons created
-            processed_nodes = set()
-            
-            # Handle clicked node first if it exists
-            if clicked_node is not None:
-                self._add_expand_delete_buttons(clicked_node)
-                processed_nodes.add(clicked_node)
-            
-            # Then process remaining nodes alphabetically
-            for node in sorted(self.nodes):
-                if node not in processed_nodes:
-                    self._add_expand_delete_buttons(node)
-                    processed_nodes.add(node)
+            return clicked_node
             
         except Exception as e:
             st.error(f"Visualization error: {str(e)}")
+            return None
 
 def main():
-    # will initialize the graph from session state
-    # (if it exists) otherwise will create a new one
+    """Main entry point for standalone mind map application.
+    
+    Features:
+    - Sidebar input for mind map generation prompts
+    - Persistent state management
+    - Loading indicator during generation
+    - Automatic rerun on updates
+    """
     mindmap = MindMap.load()
 
     st.sidebar.title("AI Mind Map Generator")
@@ -315,10 +307,8 @@ def main():
     if empty and not valid_submission:
         return
 
-    with st.spinner(text="Loading graph..."):
-        # if submit and non-empty query, then create new mindmap
+    with st.spinner(text="Loading..."):
         if valid_submission:
-            # Always create a new mindmap when submitting a prompt
             mindmap.ask_for_initial_graph(query=query)
             st.experimental_rerun()
         else:

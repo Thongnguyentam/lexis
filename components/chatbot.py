@@ -8,9 +8,13 @@ from typing import Optional
 from datetime import datetime
 from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
+from components.mindmap import MindMap
+from components.videorag import VideoRAG
 
 def init_chat_history():
-    """Initialize chat history in session state"""
+    """Initialize or retrieve chat history from session state.
+    Creates a new chat session if none exists, with a timestamp-based ID
+    and default welcome message."""
     if "chats" not in st.session_state:
         st.session_state.chats = {}
     
@@ -28,13 +32,24 @@ def init_chat_history():
         }
 
 def get_current_chat():
-    """Get the current chat's messages"""
+    """Retrieve messages from the current active chat session.
+    
+    Returns:
+        list: List of message dictionaries containing role and content.
+        Returns empty list if no current chat exists.
+    """
     if st.session_state.current_chat_id in st.session_state.chats:
         return st.session_state.chats[st.session_state.current_chat_id]["messages"]
     return []
 
 def add_message(role, content):
-    """Add a message to the current chat"""
+    """Add a new message to the current chat session.
+    Also updates chat title based on first user message.
+    
+    Args:
+        role (str): Message sender role ('user' or 'assistant')
+        content (str): Message content text
+    """
     if st.session_state.current_chat_id in st.session_state.chats:
         st.session_state.chats[st.session_state.current_chat_id]["messages"].append({
             "role": role,
@@ -47,7 +62,8 @@ def add_message(role, content):
             st.session_state.chats[st.session_state.current_chat_id]["title"] = content[:30] + "..."
 
 def start_new_chat():
-    """Start a new chat session"""
+    """Create a fresh chat session with a new timestamp-based ID.
+    Initializes with default welcome message and triggers page rerun."""
     new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
     st.session_state.current_chat_id = new_chat_id
     st.session_state.chats[new_chat_id] = {
@@ -62,6 +78,12 @@ def start_new_chat():
     st.experimental_rerun()
 
 def render_chatbot():
+    """Render the main chatbot interface including:
+    - Chat history display
+    - Message input
+    - Response handling for different types of requests (visualization, mindmap, etc)
+    
+    Handles API authentication and error states."""
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
     
     # Load environment variables
@@ -75,7 +97,7 @@ def render_chatbot():
     
     init_chat_history()
     # Add title with custom class
-    st.markdown('<h1 class="chat-title">💬 Chat with Mistral</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="chat-title">💬 Chat with Lexis</h1>', unsafe_allow_html=True)
 
     # Display current chat messages
     messages = get_current_chat()
@@ -84,10 +106,10 @@ def render_chatbot():
             st.markdown(message["content"])
     
     # Add RAG status indicator
-    if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
-        st.sidebar.success("📚 Knowledge Base: Connected")
-    else:
-        st.sidebar.warning("📚 Knowledge Base: Disconnected")
+    # if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
+    #     st.sidebar.success("📚 Knowledge Base: Connected")
+    # else:
+    #     st.sidebar.warning("📚 Knowledge Base: Disconnected")
     
     # Chat input
     if prompt := st.chat_input("Message Mistral..."):
@@ -115,8 +137,25 @@ def render_chatbot():
             except Exception as e:
                 message_placeholder.error(f"Error: {str(e)}")
 
+def is_youtube_url(query: str) -> bool:
+    """Check if the query contains a YouTube URL."""
+    return any(x in query.lower() for x in ['youtube.com/watch?v=', 'youtu.be/', 'youtube.com/shorts/'])
+
 class Chatbot:
+    """Main chatbot class handling message processing and responses.
+    
+    Integrates with:
+    - Mistral AI for language processing
+    - Snowflake for RAG (Retrieval Augmented Generation)
+    - Code interpreter for visualizations
+    - Mind map generation
+    """
+
     def __init__(self):
+        """Initialize chatbot components including:
+        - Code interpreter for running visualization code
+        - Mistral AI client for language processing
+        - Snowflake connector for knowledge base access"""
         self.code_interpreter = CodeInterpreter()
         # Initialize Mistral client
         api_key = os.getenv("MISTRAL_API_KEY")
@@ -132,8 +171,68 @@ class Chatbot:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
 
+        # Initialize VideoRAG
+        self.video_rag = VideoRAG(self.mistral_client)
+        self.current_video_id = None
+
+    def is_mindmap_request(self, query: str) -> bool:
+        """Detect if user query is requesting mind map visualization
+        by checking for relevant keywords.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            bool: True if query appears to be requesting a mind map
+        """
+        mindmap_keywords = [
+            'mind map', 'mindmap', 'knowledge graph', 'knowledgegraph',
+            'mindmaps', 'knowledge graphs', 'knowledgegraphs'
+        ]
+        return any(keyword in query.lower() for keyword in mindmap_keywords)
+
+    def process_mindmap_request(self, query: str) -> str:
+        """Generate and display an interactive mind map based on user query.
+        Stores mind map in session state for info panel display.
+        
+        Args:
+            query (str): User's mind map request
+            
+        Returns:
+            str: Success/error message about mind map creation
+        """
+        try:
+            # Initialize or get existing mindmap
+            mindmap = MindMap.load()
+            
+            # Generate new mindmap
+            mindmap.ask_for_initial_graph(query=query)
+            
+            # Store mindmap in session state for info panel
+            st.session_state.show_mindmap = True
+            st.session_state.current_mindmap = mindmap
+            
+            return "I've created a mind map based on your request. You can view and interact with it in the information panel. Click on nodes to expand or delete them!"
+            
+        except Exception as e:
+            st.error(f"Error creating mind map: {str(e)}")
+            return "Sorry, I encountered an error while creating the mind map."
+
     def process_visualization_request(self, query: str) -> str:
-        """Handle visualization requests"""
+        """Generate data visualizations using Mistral AI and code interpreter.
+        
+        Args:
+            query (str): User's visualization request
+            
+        Returns:
+            str: Success/error message about visualization creation
+            
+        Process:
+        1. Get visualization code from Mistral AI
+        2. Extract pure Python code from response
+        3. Execute code through interpreter
+        4. Display results
+        """
         try:
             response = self.mistral_client.chat.complete(
                 model="mistral-large-latest",
@@ -164,9 +263,37 @@ class Chatbot:
             return "Sorry, I encountered an error while creating the visualization."
 
     def process_query(self, query: str) -> str:
-        """Process user query using RAG if available, otherwise fall back to regular chat"""
+        """Process user input and generate appropriate response.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            str: Response text, potentially including source attribution
+            
+        Handles multiple request types:
+        - Mind map generation
+        - Data visualization
+        - RAG-enhanced responses
+        - Regular chat responses
+        """
         try:
-            if self.snowflake:
+            # Check if query contains YouTube URL
+            if is_youtube_url(query):
+                return self.video_rag.process_video_query(query)
+            
+            # If we have a current video and the query seems to be about it
+            elif self.current_video_id and not self.is_mindmap_request(query):
+                return self.video_rag.query_video(query, self.current_video_id)
+            
+            # Check if it's a mindmap request
+            if self.is_mindmap_request(query):
+                return self.process_mindmap_request(query)
+            # Check if it's a visualization request
+            elif any(keyword in query.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
+                return self.process_visualization_request(query)
+            # Handle regular queries
+            elif self.snowflake:
                 # Get RAG context and prompt
                 prompt, source_paths = self.snowflake.create_prompt(query)
                 # Use Mistral with RAG context
@@ -190,11 +317,19 @@ class Chatbot:
                 return self._process_regular_query(query)
                 
         except Exception as e:
-            st.error(f"Error processing query: {str(e)}")
+            st.error(f"Error processing query: {e}")
             return "Sorry, I encountered an error while processing your request."
 
     def _process_regular_query(self, query: str) -> str:
-        """Fallback method for regular chat without RAG"""
+        """Handle standard chat queries without RAG enhancement.
+        Used as fallback when Snowflake connection unavailable.
+        
+        Args:
+            query (str): User input text
+            
+        Returns:
+            str: Direct response from Mistral AI
+        """
         response = self.mistral_client.chat.complete(
             model="mistral-large-latest",
             messages=[
@@ -205,7 +340,10 @@ class Chatbot:
         return response.choices[0].message.content
 
     def cleanup(self):
-        """Cleanup resources"""
+        """Clean up resources and connections:
+        - Code interpreter cleanup
+        - Snowflake session closure
+        - VideoRAG cleanup"""
         if hasattr(self, 'code_interpreter'):
             self.code_interpreter.cleanup()
         if hasattr(self, 'snowflake'):
@@ -213,7 +351,9 @@ class Chatbot:
                 self.snowflake.session.close()
             except:
                 pass
+        if hasattr(self, 'video_rag'):
+            self.video_rag.cleanup()
 
     def __del__(self):
-        """Cleanup resources on deletion"""
+        """Destructor to ensure proper resource cleanup when object is deleted."""
         self.cleanup()
