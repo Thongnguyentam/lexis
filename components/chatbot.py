@@ -9,6 +9,7 @@ from datetime import datetime
 from services.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
+from components.videorag import VideoRAG
 
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
@@ -136,6 +137,10 @@ def render_chatbot():
             except Exception as e:
                 message_placeholder.error(f"Error: {str(e)}")
 
+def is_youtube_url(query: str) -> bool:
+    """Check if the query contains a YouTube URL."""
+    return any(x in query.lower() for x in ['youtube.com/watch?v=', 'youtu.be/', 'youtube.com/shorts/'])
+
 class Chatbot:
     """Main chatbot class handling message processing and responses.
     
@@ -165,6 +170,10 @@ class Chatbot:
         except Exception as e:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
+
+        # Initialize VideoRAG
+        self.video_rag = VideoRAG(self.mistral_client)
+        self.current_video_id = None
 
     def is_mindmap_request(self, query: str) -> bool:
         """Detect if user query is requesting mind map visualization
@@ -269,6 +278,14 @@ class Chatbot:
         - Regular chat responses
         """
         try:
+            # Check if query contains YouTube URL
+            if is_youtube_url(query):
+                return self.video_rag.process_video_query(query)
+            
+            # If we have a current video and the query seems to be about it
+            elif self.current_video_id and not self.is_mindmap_request(query):
+                return self.video_rag.query_video(query, self.current_video_id)
+            
             # Check if it's a mindmap request
             if self.is_mindmap_request(query):
                 return self.process_mindmap_request(query)
@@ -301,7 +318,7 @@ class Chatbot:
                 return self._process_regular_query(query)
                 
         except Exception as e:
-            st.error(f"Error processing query: {str(e)}")
+            st.error(f"Error processing query: {e}")
             return "Sorry, I encountered an error while processing your request."
 
     def _process_regular_query(self, query: str) -> str:
@@ -326,7 +343,8 @@ class Chatbot:
     def cleanup(self):
         """Clean up resources and connections:
         - Code interpreter cleanup
-        - Snowflake session closure"""
+        - Snowflake session closure
+        - VideoRAG cleanup"""
         if hasattr(self, 'code_interpreter'):
             self.code_interpreter.cleanup()
         if hasattr(self, 'snowflake'):
@@ -334,6 +352,8 @@ class Chatbot:
                 self.snowflake.session.close()
             except:
                 pass
+        if hasattr(self, 'video_rag'):
+            self.video_rag.cleanup()
 
     def __del__(self):
         """Destructor to ensure proper resource cleanup when object is deleted."""
