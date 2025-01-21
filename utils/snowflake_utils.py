@@ -79,7 +79,7 @@ class SnowflakeConnector:
         prompt_context = self.get_similar_chunks_search_service(query)
   
         prompt = f"""
-           You are an expert chat assistance that extracs information from the CONTEXT provided
+           You are an expert chat assistance that extracts information from the CONTEXT provided
            between <context> and </context> tags.
            When ansering the question contained between <question> and </question> tags
            be concise and do not hallucinate. 

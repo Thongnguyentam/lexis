@@ -6,7 +6,7 @@ from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPER
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
 from datetime import datetime
-from services.snowflake_utils import SnowflakeConnector
+from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 
 def init_chat_history():

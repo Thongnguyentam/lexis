@@ -7,3 +7,9 @@ pillow
 plotly
 matplotlib
 streamlit-agraph
+pyautogen==0.4.1
+duckduckgo_search==7.0.2
+apify_client==1.8.1
+flaml[automl]
+snowflake==1.0.2
+llmlingua==0.2.2
