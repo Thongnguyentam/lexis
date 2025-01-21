@@ -24,3 +24,13 @@ SNOWFLAKE_PASSWORD = os.getenv("SNOWFLAKE_PASSWORD")
 SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE")
 SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_SCHEMA")
 SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")
+
+APIFY_KEY = os.getenv("APIFY_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+CONFIG_LIST = [
+    {
+        "model": "mistral-large-latest",
+        "api_key": MISTRAL_API_KEY,
+        "api_type": "mistral"
+    }
+]

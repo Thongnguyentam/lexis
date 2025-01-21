@@ -14,6 +14,6 @@ def init_page_config():
     # Increase the upload limit to 1GB
     st._config.set_option('server.maxUploadSize', 1000)
     
-    # Load global CSS
-    with open('static/styles.css') as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True) 
+    # Load global CSS with explicit UTF-8 encoding
+    with open('static/styles.css', encoding='utf-8') as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)

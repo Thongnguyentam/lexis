@@ -310,7 +310,7 @@ def main():
     with st.spinner(text="Loading..."):
         if valid_submission:
             mindmap.ask_for_initial_graph(query=query)
-            st.experimental_rerun()
+            st.rerun()
         else:
             mindmap.visualize()
 
