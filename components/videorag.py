@@ -70,25 +70,42 @@ class VideoRAG:
             video_id: YouTube video ID
             
         Returns:
-            Dict containing video title and publication year
+            Dict containing video title, author, upload date and embed HTML
         """
         try:
-            # Using oEmbed as it doesn't require API key
+            # Using oEmbed to get embed HTML and metadata
             oembed_url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
             response = requests.get(oembed_url)
             data = response.json()
             
+            video_url = f"https://www.youtube.com/watch?v={video_id}"
+            video_page = requests.get(video_url)
+            
+            # Default to current date if upload date not found
+            upload_date = datetime.now()
+            
+            # Store video info in session state for info panel
+            st.session_state.current_video = {
+                "id": video_id,
+                "title": data.get("title", "Untitled Video"),
+                "author": data.get("author_name", "Unknown Author"),
+                "embed_html": data.get("html", ""),
+                "url": video_url
+            }
+            
             return {
                 "title": data.get("title", "Untitled Video"),
                 "author": data.get("author_name", "Unknown Author"),
-                "year": datetime.now().year  # Fallback to current year
+                "upload_date": upload_date,
+                "url": video_url
             }
         except Exception as e:
             st.error(f"Error fetching video metadata: {e}")
             return {
                 "title": "Untitled Video",
                 "author": "Unknown Author",
-                "year": datetime.now().year
+                "upload_date": datetime.now(),
+                "url": f"https://www.youtube.com/watch?v={video_id}"
             }
 
     def format_timestamp(self, seconds: float) -> str:
@@ -198,8 +215,12 @@ class VideoRAG:
             metadata = self.video_metadata.get(video_id, {
                 "title": "Untitled Video",
                 "author": "Unknown Author",
-                "year": datetime.now().year
+                "upload_date": datetime.now(),
+                "url": f"https://www.youtube.com/watch?v={video_id}"
             })
+            
+            # Format upload date for APA citation
+            upload_date_str = metadata['upload_date'].strftime("%Y, %B %d")
             
             # Prepare context with timestamps
             context_entries = []
@@ -213,9 +234,7 @@ class VideoRAG:
             prompt = f"""Based on the following video transcript excerpt, first provide a 1-2 sentence summary, then list the relevant exact quotes with their timestamps.
 
 Video Information:
-Title: {metadata['title']}
-Author: {metadata['author']}
-Year: {metadata['year']}
+{metadata['author']} ({upload_date_str}). *{metadata['title']}* [Video]. YouTube. {metadata['url']}
 
 Transcript context:
 {context}
@@ -225,7 +244,7 @@ Question: {question}
 Required format:
 First: Brief summary (1-2 sentences)
 Then: Supporting quotes in this format:
-"[Complete sentence or statement from transcript]" [MM:SS-MM:SS] ({metadata['author']}, {metadata['year']})
+"[Complete sentence or statement from transcript]" [MM:SS-MM:SS] ({metadata['author']}, {upload_date_str})
 
 IMPORTANT:
 - Start with a concise summary

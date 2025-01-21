@@ -58,10 +58,47 @@ def render_info_panel():
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
+        
+        /* YouTube video container styling */
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+            overflow: hidden;
+            max-width: 100%;
+        }
+        
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
         </style>
     """, unsafe_allow_html=True)
     
     st.markdown('<h1 class="info-panel-title">Info Panel</h1>', unsafe_allow_html=True)
+    
+    # YouTube Video Display Section
+    if 'current_video' in st.session_state:
+        video = st.session_state.current_video
+        st.markdown(f"**Video Title:** {video['title']}")
+        st.markdown(f"**Channel:** {video['author']}")
+        
+        # Create embedded video player
+        video_embed = f"""
+        <div class="video-container">
+            <iframe
+                src="https://www.youtube.com/embed/{video['id']}"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowfullscreen
+            ></iframe>
+        </div>
+        """
+        st.markdown(video_embed, unsafe_allow_html=True)
+        st.markdown("---")  # Visual separator
     
     # Mind Map Display Section
     if st.session_state.get('show_mindmap', False) and st.session_state.get('current_mindmap'):
