@@ -10,7 +10,7 @@ from datetime import datetime
 from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
-from components.videorag import VideoRAG
+# from components.videorag import VideoRAG
 import codecs
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
@@ -173,8 +173,8 @@ class Chatbot:
             self.snowflake = None
 
         # Initialize VideoRAG
-        self.video_rag = VideoRAG(self.mistral_client)
-        self.current_video_id = None
+        # self.video_rag = VideoRAG(self.mistral_client)
+        # self.current_video_id = None
 
     def is_mindmap_request(self, query: str) -> bool:
         """Detect if user query is requesting mind map visualization
@@ -279,13 +279,13 @@ class Chatbot:
         - Regular chat responses
         """
         try:
-            # Check if query contains YouTube URL
-            if is_youtube_url(query):
-                return self.video_rag.process_video_query(query)
+            # # Check if query contains YouTube URL
+            # if is_youtube_url(query):
+            #     return self.video_rag.process_video_query(query)
             
-            # If we have a current video and the query seems to be about it
-            elif self.current_video_id and not self.is_mindmap_request(query):
-                return self.video_rag.query_video(query, self.current_video_id)
+            # # If we have a current video and the query seems to be about it
+            # elif self.current_video_id and not self.is_mindmap_request(query):
+            #     return self.video_rag.query_video(query, self.current_video_id)
             
             # Check if it's a mindmap request
             if self.is_mindmap_request(query):
@@ -295,23 +295,23 @@ class Chatbot:
                 return self.process_visualization_request(query)
             # Handle regular queries
             elif self.snowflake:
-                # # Get RAG context and prompt
-                # prompt, source_paths = self.snowflake.create_prompt(query)
-                # # Use Mistral with RAG context
-                # response = self.mistral_client.chat.complete(
-                #     model="mistral-large-latest",
-                #     messages=[
-                #         {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
-                #         {"role": "user", "content": prompt}
-                #     ]
-                # )
+                # Get RAG context and prompt
+                prompt, source_paths = self.snowflake.create_prompt(query)
+                # Use Mistral with RAG context
+                response = self.mistral_client.chat.complete(
+                    model="mistral-large-latest",
+                    messages=[
+                        {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
                 
-                # # Add source attribution if sources were found
-                # answer = response.choices[0].message.content
-                # if source_paths:
-                #     sources_list = "\n".join([f"- {path}" for path in source_paths])
-                #     answer += f"\n\nSources:\n{sources_list}"
-                answer = search(query)
+                # Add source attribution if sources were found
+                answer = response.choices[0].message.content
+                if source_paths:
+                    sources_list = "\n".join([f"- {path}" for path in source_paths])
+                    answer += f"\n\nSources:\n{sources_list}"
+                # answer = search(query)
                 return answer
             else:
                 # Fallback to regular chat if Snowflake is not available
@@ -352,8 +352,8 @@ class Chatbot:
                 self.snowflake.session.close()
             except:
                 pass
-        if hasattr(self, 'video_rag'):
-            self.video_rag.cleanup()
+        # if hasattr(self, 'video_rag'):
+        #     self.video_rag.cleanup()
 
     def __del__(self):
         """Destructor to ensure proper resource cleanup when object is deleted."""
