@@ -16,7 +16,7 @@ def render_settings():
     st.sidebar.markdown('<h1>Conversations</h1>', unsafe_allow_html=True)
     
     # New Chat button
-    if st.sidebar.button("+ New Chat", use_container_width=True):
+    if st.sidebar.button("+ New Chat", use_container_width=True, type="primary"):
         start_new_chat()
     
     # Initialize edit mode state if not exists
@@ -84,36 +84,6 @@ def render_settings():
                         st.session_state.current_chat_id = next(iter(st.session_state.chats))
                     st.rerun()
 
-    st.sidebar.markdown("---")
-    
-    # API Key Section
-    st.sidebar.markdown('<h1>MISTRAL_API_KEY</h1>', unsafe_allow_html=True)
-    
-    # Get API key from environment or session state
-    st.session_state.setdefault('mistral_api_key', default_api_key)
-    
-    # Create columns for API key input and save button
-    key_col1, key_col2 = st.sidebar.columns([4, 1])
-    
-    # Manual API key input with password mask
-    with key_col1:
-        manual_api_key = st.text_input(
-            "",
-            value=st.session_state.mistral_api_key,
-            type="password",
-            key="api_key_input",
-            label_visibility="collapsed"
-        )
-    
-    # Save button
-    with key_col2:
-        if st.button("💾", use_container_width=True, key="save_api_key"):
-            if manual_api_key:
-                st.session_state.mistral_api_key = manual_api_key
-                st.sidebar.success("✓ API key saved!")
-            else:
-                st.sidebar.warning("⚠️ Please enter an API key")
-    
     st.sidebar.markdown("---")
     
     # File Collection section
@@ -192,4 +162,62 @@ def render_settings():
 
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
     
+
+
+    st.sidebar.markdown("---")
+    
+    # Initialize Snowflake configs in session state
+    snowflake_configs = {
+        'mistral_api_key': os.getenv('MISTRAL_API_KEY', ''),
+        'account': os.getenv('SNOWFLAKE_ACCOUNT', ''),
+        'user': os.getenv('SNOWFLAKE_USER', ''),
+        'password': os.getenv('SNOWFLAKE_PASSWORD', ''),
+        'database': os.getenv('SNOWFLAKE_DATABASE', ''),
+        'schema': os.getenv('SNOWFLAKE_SCHEMA', ''),
+        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', ''),
+        'search_service': os.getenv('SNOWFLAKE_SEARCH_SERVICE', ''),
+        'stage_name': os.getenv('SNOWFLAKE_STAGE_NAME', '')
+    }
+    
+    for key in snowflake_configs:
+        st.session_state.setdefault(f'config_{key}', snowflake_configs[key])
+    
+    # Create expandable section for all settings
+    with st.sidebar.expander("Configuration"):
+        # Show warning if required configurations are missing
+        missing_configs = [
+            key for key in snowflake_configs 
+            if not st.session_state[f'config_{key}']
+        ]
+        if missing_configs:
+            warning_msg = "⚠️ Required configurations missing:\n"
+            for key in missing_configs:
+                config_name = 'MISTRAL_API_KEY' if key == 'mistral_api_key' else f'SNOWFLAKE_{key.upper()}'
+                warning_msg += f"- {config_name}\n"
+            st.warning(warning_msg)
+        
+        for key in snowflake_configs:
+            input_col, button_col = st.columns([4, 1])
+            
+            # Input field for each configuration
+            with input_col:
+                new_value = st.text_input(
+                    "",
+                    value=st.session_state[f'config_{key}'],
+                    type="password",
+                    key=f"config_{key}_input",
+                    placeholder=f"{'MISTRAL_API_KEY' if key == 'mistral_api_key' else f'SNOWFLAKE_{key.upper()}'}",
+                    label_visibility="collapsed"
+                )
+            
+            # Save button for each configuration
+            with button_col:
+                if st.button("💾", key=f"save_config_{key}", use_container_width=True):
+                    if new_value:
+                        st.session_state[f'config_{key}'] = new_value
+                        if key == 'mistral_api_key':
+                            st.session_state.mistral_api_key = new_value
+                        st.sidebar.success("✓ Saved!")
+                    else:
+                        st.sidebar.warning("⚠️ Required")
     
