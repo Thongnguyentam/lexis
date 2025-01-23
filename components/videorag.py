@@ -1,8 +1,17 @@
+import sys
 import tempfile
 from typing import Tuple, Optional, Dict, List
 import streamlit as st
 from youtube_transcript_api import YouTubeTranscriptApi
 from mistralai import Mistral
+
+# Handle SQLite version requirement for ChromaDB
+try:
+    import pysqlite3
+    sys.modules['sqlite3'] = pysqlite3
+except ImportError:
+    pass
+
 from chromadb import Client, Settings
 import chromadb
 import os
