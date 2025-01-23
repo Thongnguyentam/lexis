@@ -220,3 +220,22 @@ section[data-testid="stSidebar"]
   border: none !important;
   box-shadow: none !important;
 }
+
+/* New Chat button specific styles */
+section[data-testid="stSidebar"]
+  div[data-testid="stVerticalBlock"]
+  button[kind="primary"]:has(div:contains("+ New Chat")) {
+  background-color: #00ced1 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+section[data-testid="stSidebar"]
+  div[data-testid="stVerticalBlock"]
+  button[kind="primary"]:has(div:contains("+ New Chat")):hover {
+  background-color: #00b4b7 !important;
+  color: white !important;
+  border: none !important;
+  box-shadow: none !important;
+}

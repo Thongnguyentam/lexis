@@ -10,8 +10,10 @@ from datetime import datetime
 from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
-# from components.videorag import VideoRAG
+from components.videorag import VideoRAG
 import codecs
+from utils.chat_utils import start_new_chat
+
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
     Creates a new chat session if none exists, with a timestamp-based ID
@@ -27,7 +29,7 @@ def init_chat_history():
             "messages": [
                 {
                     "role": "assistant",
-                    "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
+                    "content": "Hi! I’m Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖"
                 }
             ]
         }
@@ -62,22 +64,6 @@ def add_message(role, content):
             st.session_state.chats[st.session_state.current_chat_id]["title"] == "New Chat"):
             st.session_state.chats[st.session_state.current_chat_id]["title"] = content[:30] + "..."
 
-def start_new_chat():
-    """Create a fresh chat session with a new timestamp-based ID.
-    Initializes with default welcome message and triggers page rerun."""
-    new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.session_state.current_chat_id = new_chat_id
-    st.session_state.chats[new_chat_id] = {
-        "title": "New Chat",
-        "messages": [
-            {
-                "role": "assistant",
-                "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
-            }
-        ]
-    }
-    st.rerun()
-
 def render_chatbot():
     """Render the main chatbot interface including:
     - Chat history display
@@ -93,7 +79,6 @@ def render_chatbot():
     # Get API key from environment
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
-        st.error("Please set your Mistral API key in the .env file")
         return
     
     init_chat_history()
@@ -122,20 +107,38 @@ def render_chatbot():
         # Get bot response
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
+            
+            # Add custom CSS for progress bar
+            st.markdown("""
+                <style>
+                .stProgress > div > div > div > div {
+                    background-color: #00CED1;
+                }
+                </style>""", 
+                unsafe_allow_html=True
+            )
+            progress_bar = st.progress(0)
+            
             try:
                 chatbot = Chatbot()
+                progress_bar.progress(30)  # Start processing
                 
                 # Check if it's a visualization request
                 if any(keyword in prompt.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
+                    progress_bar.progress(60)  # Visualization processing
                     response = chatbot.process_visualization_request(prompt)
                 else:
                     # Handle regular chat responses
+                    progress_bar.progress(60)  # Query processing
                     response = chatbot.process_query(prompt)
                 
+                progress_bar.progress(100)  # Complete
+                progress_bar.empty()  # Remove progress bar
                 message_placeholder.markdown(response)
                 add_message("assistant", response)
                 
             except Exception as e:
+                progress_bar.empty()  # Remove progress bar
                 message_placeholder.error(f"Error: {str(e)}")
 
 def is_youtube_url(query: str) -> bool:
@@ -158,10 +161,13 @@ class Chatbot:
         - Mistral AI client for language processing
         - Snowflake connector for knowledge base access"""
         self.code_interpreter = CodeInterpreter()
+        
         # Initialize Mistral client
         api_key = os.getenv("MISTRAL_API_KEY")
         if not api_key:
-            raise ValueError("Please set your Mistral API key in the .env file")
+            # Instead of raising an error, just set client to None
+            self.mistral_client = None
+            return
         self.mistral_client = Mistral(api_key=api_key)
         
         # Initialize Snowflake RAG
@@ -173,8 +179,8 @@ class Chatbot:
             self.snowflake = None
 
         # Initialize VideoRAG
-        # self.video_rag = VideoRAG(self.mistral_client)
-        # self.current_video_id = None
+        self.video_rag = VideoRAG(self.mistral_client)
+        self.current_video_id = None
 
     def is_mindmap_request(self, query: str) -> bool:
         """Detect if user query is requesting mind map visualization

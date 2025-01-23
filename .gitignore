@@ -1,5 +1,6 @@
 # Python
 __pycache__/
+**/__pycache__/
 *.py[cod]
 *$py.class
 *.so
@@ -20,6 +21,16 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
+
+# Cache files
+.cache/
+**/.cache/
+.pytest_cache/
+**/.pytest_cache/
+.mypy_cache/
+**/.mypy_cache/
+.ruff_cache/
+**/.ruff_cache/
 
 # Virtual Environment
 venv/
@@ -57,5 +68,4 @@ Thumbs.db
 uploads/
 temp/
 data/ 
-.cache/
 *.ipynb
