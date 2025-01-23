@@ -12,6 +12,8 @@ from config import SnowflakeConfig
 from components.mindmap import MindMap
 from components.videorag import VideoRAG
 import codecs
+from utils.chat_utils import start_new_chat
+
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
     Creates a new chat session if none exists, with a timestamp-based ID
@@ -61,22 +63,6 @@ def add_message(role, content):
             len(st.session_state.chats[st.session_state.current_chat_id]["messages"]) == 2 and
             st.session_state.chats[st.session_state.current_chat_id]["title"] == "New Chat"):
             st.session_state.chats[st.session_state.current_chat_id]["title"] = content[:30] + "..."
-
-def start_new_chat():
-    """Create a fresh chat session with a new timestamp-based ID.
-    Initializes with default welcome message and triggers page rerun."""
-    new_chat_id = datetime.now().strftime("%Y%m%d_%H%M%S")
-    st.session_state.current_chat_id = new_chat_id
-    st.session_state.chats[new_chat_id] = {
-        "title": "New Chat",
-        "messages": [
-            {
-                "role": "assistant",
-                "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
-            }
-        ]
-    }
-    st.rerun()
 
 def render_chatbot():
     """Render the main chatbot interface including:

@@ -2,7 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import pandas as pd
-from components.chatbot import start_new_chat
+from utils.chat_utils import start_new_chat
 from utils.snowflake_upload import upload_to_stage
 
 def render_settings():
