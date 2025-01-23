@@ -29,7 +29,7 @@ def init_chat_history():
             "messages": [
                 {
                     "role": "assistant",
-                    "content": "Hi! I'm a chatbot powered by Mistral AI. I can help you analyze documents, answer questions, and assist with various tasks. How can I help you today? 🤖"
+                    "content": "Hi! I’m Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖"
                 }
             ]
         }
@@ -79,7 +79,6 @@ def render_chatbot():
     # Get API key from environment
     api_key = os.getenv("MISTRAL_API_KEY")
     if not api_key:
-        st.error("Please set your Mistral API key in the .env file")
         return
     
     init_chat_history()
@@ -162,10 +161,13 @@ class Chatbot:
         - Mistral AI client for language processing
         - Snowflake connector for knowledge base access"""
         self.code_interpreter = CodeInterpreter()
+        
         # Initialize Mistral client
         api_key = os.getenv("MISTRAL_API_KEY")
         if not api_key:
-            raise ValueError("Please set your Mistral API key in the .env file")
+            # Instead of raising an error, just set client to None
+            self.mistral_client = None
+            return
         self.mistral_client = Mistral(api_key=api_key)
         
         # Initialize Snowflake RAG
