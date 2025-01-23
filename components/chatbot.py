@@ -122,20 +122,38 @@ def render_chatbot():
         # Get bot response
         with st.chat_message("assistant"):
             message_placeholder = st.empty()
+            
+            # Add custom CSS for progress bar
+            st.markdown("""
+                <style>
+                .stProgress > div > div > div > div {
+                    background-color: #00CED1;
+                }
+                </style>""", 
+                unsafe_allow_html=True
+            )
+            progress_bar = st.progress(0)
+            
             try:
                 chatbot = Chatbot()
+                progress_bar.progress(30)  # Start processing
                 
                 # Check if it's a visualization request
                 if any(keyword in prompt.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
+                    progress_bar.progress(60)  # Visualization processing
                     response = chatbot.process_visualization_request(prompt)
                 else:
                     # Handle regular chat responses
+                    progress_bar.progress(60)  # Query processing
                     response = chatbot.process_query(prompt)
                 
+                progress_bar.progress(100)  # Complete
+                progress_bar.empty()  # Remove progress bar
                 message_placeholder.markdown(response)
                 add_message("assistant", response)
                 
             except Exception as e:
+                progress_bar.empty()  # Remove progress bar
                 message_placeholder.error(f"Error: {str(e)}")
 
 def is_youtube_url(query: str) -> bool:
