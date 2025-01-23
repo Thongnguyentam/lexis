@@ -16,16 +16,16 @@ class DocumentReadingAgent(AssistantAgent):
         
     def get_relevant_information(self, message: str):
         search_result = retrieve_relevant_documents(query=message)
-        print("search_result", search_result)
+        print("relevant documents search result", search_result)
         doc_message = f"""
             User's: '{message}'
-            Retrieved relevant documents from the databases: {search_result}\n
+            Retrieved relevant documents: {search_result}\n
 
             - If there is no relevant information in the documents sufficient to answer user's message, *ONLY* reply 'no information'.
-            - If there is relevant information in the documents, *ONLY* Respond in this format:
-            1. *Summary*: A brief summary of the findings from the database, explicitly referencing the sources.
-            2. *Detailed Analysis*: An in-depth explanation based on the documents, with citations for each piece of information.
-            3. *Citations*: A list of all referenced sources included in the relative path of the search results.
+            - If there is relevant information in the documents, *ONLY* provide the information in this format:
+                1. *Summary*: A brief summary of the relevant information in the documents.
+                2. *Detailed Analysis*: An in-depth information based on the documents, with citations for each piece of information.
+                3. *Citations*: A list of all referenced sources included in the relative path of the search results.
             """
         response = self.generate_reply(messages = [{"role": "assistant", "content": doc_message}])
         response = response['content']

@@ -10,9 +10,10 @@ from datetime import datetime
 import arxiv
 class WebSearchAgent(AssistantAgent):
     def __init__(self):
+        model = CONFIG_LIST[1]
         super().__init__(
             name =  "web_search_agent",
-            llm_config={"config_list": CONFIG_LIST},
+            llm_config={"config_list": [model]},
             system_message=WEB_SEARCH_SYSTEM_MESSAGE,
             description=WEB_SEARCH_DESCRIPTION
         )
@@ -21,7 +22,24 @@ class WebSearchAgent(AssistantAgent):
                 "Perform a web search to find relevant content if there is no sufficient information in the context for answering the question. "
                 "The function scrapes the web page and returns the content with sources."
             ))(search_internet)
-
+        
+    def search_web(self, query: str) -> str:
+        search_res = search_internet(query=query)
+        print("web search result", search_res)
+        web_search_prompt = f"""
+            User's message: '{query}'
+            <search result>\n{search_res}\n</search result>
+            
+            Respond based on the search result from web above:
+            - If the web search fails or there is no relevant information sufficient to answer user's message, *ONLY* respond 'no information'.
+            - If there is relevant information in the search result, *ONLY* Respond in this format:
+                1. *Summary*: A brief summary of the findings from the web, explicitly referencing the sources.
+                2. *Detailed Analysis*: An in-depth explanation based on the web search results
+                3. *Citations*: the url of the source.
+        """
+        response = self.generate_reply(messages = [{"role": "assistant", "content": web_search_prompt}])
+        return response.strip()
+    
 def get_headers() -> dict:
     """Generate random headers"""
     user_agents = [
@@ -167,53 +185,7 @@ def search_internet(query:str, max_results: Annotated[int, "Number of web to scr
         urls = [{"url": r['href']} for r in ddgs.text(query, max_results=max_results)]
         #print(f"============ SCRAPING URLS: {urls} =============== \n")
         res = scrape_page(urls=urls)
-        return str(res)
+        return res
 
 def get_current_date_time() -> Annotated[str, "Current date and time"]:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-def fetch_arxiv_papers(
-    title: Annotated[str, "Search keyword for the relevant papers or articles"], 
-    papers_count: Annotated[int, "Number of papers to fetch"]
-) -> Annotated[list, "List of papers"]:
-    """
-    Search Papers Tool
-    Arxiv Tool
-    Performs a search for papers and articles on Arxiv using the arxiv package.
-
-    :param title: str, search keyword for the relevant papers or articles.
-    :param papers_count: int, number of papers to fetch.
-    :return: list, search results.
-    """
-    
-    search_query = f'all:"{title}"'
-    search = arxiv.Search(
-        query=search_query,
-        max_results=papers_count,
-        sort_by=arxiv.SortCriterion.SubmittedDate,
-        sort_order=arxiv.SortOrder.Descending
-    )
-
-    papers = []
-    # Use the Client for searching
-    client = arxiv.Client()
-    
-    # Execute the search
-    search = client.results(search)
-
-    for result in search:
-        paper_info = {
-                'title': result.title,
-                'authors': [author.name for author in result.authors],
-                'summary': result.summary,
-                'published': result.published,
-                'journal_ref': result.journal_ref,
-                'doi': result.doi,
-                'primary_category': result.primary_category,
-                'categories': result.categories,
-                'pdf_url': result.pdf_url,
-                'arxiv_url': result.entry_id
-            }
-        papers.append(paper_info)
-
-    return papers

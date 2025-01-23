@@ -1,61 +1,10 @@
-from datetime import datetime
-import json
-import re
-
-from assistance.critics_agent import CriticAgent
+from assistance.critics_agent import CriticAgent, reflection_message
 from assistance.documents_reading_agent import DocumentReadingAgent
+from assistance.intent_classifier_agent import IntentClassifier
+from assistance.paper_search_agent import PaperSearchAgent
 from assistance.user_proxy import UserProxy
 from assistance.web_search_agent import WebSearchAgent
-from assistance.writer_agent import WriterAgent
-from prompts.critics import REFLECTION_MESSAGE
-
-def create_prompt(context: str, message: str):
-   prompt = f"""
-   Use the following pieces of retrieved context to answer the message.
-   If you don´t have the information just say so and suggest from your general knowledge.
-   ** DO NOT ** include sources that do not contain information about the user's message. 
-
-   **ONLY** respond in this format:
-   1. Summary: A brief summary of the findings from the database, explicitly referencing the sources.
-   2. Detailed Analysis: An in-depth explanation based on the documents, with citations for each piece of information.
-   3. Citations: A list of all referenced sources included in the relative path of the search results (If applicable).
-
-   <context>          
-   {context}
-   </context>
-   <question>  
-   {message}
-   </question>
-   Answer: 
-   """
-   return prompt
-
-def create_web_search_prompt(search_res: str, message:str):
-    return f"""
-        User's message: '{message}'
-        Search Result: {search_res}
-        
-        If there is no search result, or the search result tells that the retrieved documents is not sufficient or do not provide direct information about user's message, reply 'yes'. 
-        Otherwise, if the documents contains relevant information or sufficient information to answer user's message, reply 'no'. 
-        
-        **ONLY** Respond 'yes' or 'no'.
-    """
-
-def reflection_message(recipient, messages, sender, config):
-        print(f"Critic Agent Reflecting ...", "yellow")
-        message = REFLECTION_MESSAGE
-        last_message = recipient.chat_messages_for_summary(sender)[-1]['content']
-        user_said = recipient.chat_messages_for_summary(sender)[0]['content']
-        match = re.search(r"User:\s\"(.*?)\"", user_said)
-        if match:
-            user_said = match.group(1)
-            
-        return f"""
-        Researcher's response: \n{last_message} \n
-        {message} \n
-        User: {user_said} \n
-        
-        """
+from assistance.writer_agent import WriterAgent, create_prompt
         
 def generate_request_to_recipient(
     agent,
@@ -76,14 +25,40 @@ def generate_request_to_recipient(
     
 def search(message: str):
     #agents initialization
-    user_proxy = UserProxy()
     web_search_agent = WebSearchAgent()
-    writer_agent = WriterAgent()
-    critic_agent = CriticAgent()
     document_reading_agent = DocumentReadingAgent()
-    web_search_intent = IntentClassifier()
+    intent_agent = IntentClassifier()
+    paper_search_agent=PaperSearchAgent()
+    user_proxy = UserProxy()
+    critic_agent = CriticAgent()
+    writer_agent = WriterAgent()
 
-    # Sequential chat configuration
+    #intent classification
+    intent = intent_agent.classify(message)
+    print(intent)
+    
+    if 'papers_search' in intent:
+        search_res = paper_search_agent.search_paper(query=message)
+        if not search_res or (search_res == "" or "no info" in search_res):
+            search_res = "no related information found"
+    elif 'web_search' in intent:
+        # always use tools to search
+        search_res = web_search_agent.search_web(query=message)
+        if not search_res or (search_res == "" or "no info" in search_res):
+            search_res = "no related information found"
+    else:
+        search_res = "no related information found"
+    print(f"search_res: {search_res}")
+    
+    # For all intents that require reading a document from the RAG 
+    relev_doc = document_reading_agent.get_relevant_information(message=message)
+    if not relev_doc or (relev_doc == "" or "no info" in relev_doc):
+        relev_doc = "no related documents found"
+    print(f"relev_doc: {relev_doc}")
+    
+    aggregate_prompt = create_prompt(context=search_res, relev_doc= relev_doc, message=message)
+    
+    # Nested chat configuration
     user_proxy.register_nested_chats(
         chat_queue= [
             {
@@ -96,19 +71,8 @@ def search(message: str):
             ],
         trigger=writer_agent
     )
-    
-    search_res = document_reading_agent.get_relevant_information(message=message)
-    if search_res and (search_res == "" or "no info" in search_res):
-        search_res = "no related documents found"
-        
-    web_search_prompt = create_web_search_prompt(search_res=search_res, message=message)
-    is_search = web_search_intent.classify(web_search_prompt)
-    print("is_search: ", is_search)
-    chat_queue = []
-    if is_search and 'yes' in is_search:
-        chat_queue.append(generate_request_to_recipient(agent=web_search_agent, message= message, max_turns=2, summary_method="reflection_with_llm"))
-    aggregate_prompt = create_prompt(context=search_res, message=message)
-    chat_queue.append(generate_request_to_recipient(agent=writer_agent,message=aggregate_prompt, max_turns=2))
 
+    chat_queue = []
+    chat_queue.append(generate_request_to_recipient(agent=writer_agent,message=aggregate_prompt, max_turns=2))
     res = user_proxy.initiate_chats(chat_queue=chat_queue)
-    return res[-1].chat_history[-1]['content'] 
+    return res[-1].chat_history[-1]['content']

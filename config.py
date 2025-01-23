@@ -27,10 +27,16 @@ SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")
 
 APIFY_KEY = os.getenv("APIFY_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+OPENAPI_KEY = os.getenv("OPENAPI_KEY")
+
 CONFIG_LIST = [
     {
         "model": "mistral-large-latest",
         "api_key": MISTRAL_API_KEY,
         "api_type": "mistral"
-    }
+    },
+    {
+        "model": "gpt-4o-mini", 
+        "api_key": OPENAPI_KEY
+    },
 ]

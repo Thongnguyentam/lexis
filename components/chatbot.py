@@ -295,23 +295,23 @@ class Chatbot:
                 return self.process_visualization_request(query)
             # Handle regular queries
             elif self.snowflake:
-                # Get RAG context and prompt
-                prompt, source_paths = self.snowflake.create_prompt(query)
-                # Use Mistral with RAG context
-                response = self.mistral_client.chat.complete(
-                    model="mistral-large-latest",
-                    messages=[
-                        {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
-                        {"role": "user", "content": prompt}
-                    ]
-                )
+                # # Get RAG context and prompt
+                # prompt, source_paths = self.snowflake.create_prompt(query)
+                # # Use Mistral with RAG context
+                # response = self.mistral_client.chat.complete(
+                #     model="mistral-large-latest",
+                #     messages=[
+                #         {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
+                #         {"role": "user", "content": prompt}
+                #     ]
+                # )
                 
-                # Add source attribution if sources were found
-                answer = response.choices[0].message.content
-                if source_paths:
-                    sources_list = "\n".join([f"- {path}" for path in source_paths])
-                    answer += f"\n\nSources:\n{sources_list}"
-                # answer = search(query)
+                # # Add source attribution if sources were found
+                # answer = response.choices[0].message.content
+                # if source_paths:
+                #     sources_list = "\n".join([f"- {path}" for path in source_paths])
+                #     answer += f"\n\nSources:\n{sources_list}"
+                answer = search(query)
                 return answer
             else:
                 # Fallback to regular chat if Snowflake is not available
