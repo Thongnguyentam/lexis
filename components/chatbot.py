@@ -10,7 +10,7 @@ from datetime import datetime
 from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
-# from components.videorag import VideoRAG
+from components.videorag import VideoRAG
 import codecs
 def init_chat_history():
     """Initialize or retrieve chat history from session state.
@@ -191,8 +191,8 @@ class Chatbot:
             self.snowflake = None
 
         # Initialize VideoRAG
-        # self.video_rag = VideoRAG(self.mistral_client)
-        # self.current_video_id = None
+        self.video_rag = VideoRAG(self.mistral_client)
+        self.current_video_id = None
 
     def is_mindmap_request(self, query: str) -> bool:
         """Detect if user query is requesting mind map visualization
