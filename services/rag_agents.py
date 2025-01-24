@@ -160,7 +160,7 @@ class FilteredAgentRAG(AgentRAG):
     def __init__(self, config: SnowflakeConfig):
         super().__init__(config)
         
-    @context_filter(f_guardrail, 0.75, keyword_for_prompt="query")
+    #@context_filter(f_guardrail, 0.75, keyword_for_prompt="query")
     def get_similar_chunks_search_service(
         self, 
         query, 

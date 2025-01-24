@@ -1,5 +1,4 @@
 from services.rag_agents import AgentRAG
-from services.search_service import search
 import streamlit as st
 import os
 from mistralai import Mistral

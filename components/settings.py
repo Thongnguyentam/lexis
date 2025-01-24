@@ -3,7 +3,6 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 from utils.chat_utils import start_new_chat
-from utils.snowflake_upload import upload_to_stage
 
 def render_settings():
     # Load environment variables
