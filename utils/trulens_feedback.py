@@ -29,3 +29,5 @@ def get_trulens_feedbacks(snowpark_session: Session):
         .aggregate(np.mean)
     )
     feedbacks = [f_groundedness, f_answer_relevance, f_context_relevance]
+    
+    return feedbacks
