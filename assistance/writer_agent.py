@@ -45,7 +45,7 @@ class WriterAgent(AssistantAgent):
         )
         return context_handling
     
-def create_prompt(context: str, relev_doc: str, message: str):
+def create_prompt(context: str, message: str):
    prompt = f"""
    Use the context information and relevant documents to answer the question.
    If there is no context information, answer based on your general knowledge. 
@@ -53,16 +53,13 @@ def create_prompt(context: str, relev_doc: str, message: str):
    Respond based on the context information provided:
     - If the context information and relevant documents are not sufficient to answer user's message, *ONLY* respond with your general knowledge in any format.
     - If there is relevant information in the context information and relevant documents, *ONLY* respond in this format:
-        1. *Summary*: A brief summary of context information and relevant documents.
-        2. *Detailed Analysis*: Provide an in-depth and detailed information to answer the question.
-        3. *Citations*: A list of all referenced sources included in the context information and relevant documents (If applicable).
+        - Summary: A brief summary of context information and relevant documents.
+        - Detailed Analysis: Provide an in-depth and detailed information to answer the question.
+        - Source: A list of all referenced sources included in the context information and relevant documents (If applicable).
 
-    <context>          
+    <context>
     {context}
     </context>
-    <relevant_doc>
-    {relev_doc}
-    </relevant_doc>
     <question>  
     {message}
     </question>

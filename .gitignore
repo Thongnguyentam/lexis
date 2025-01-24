@@ -69,3 +69,4 @@ uploads/
 temp/
 data/ 
 *.ipynb
+default.*

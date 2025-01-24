@@ -7,7 +7,7 @@ from prompts.web_search_agent import WEB_SEARCH_DESCRIPTION, WEB_SEARCH_SYSTEM_M
 from utils.custom_actor_client import CustomApifyClient
 from autogen import AssistantAgent
 from datetime import datetime
-import arxiv
+
 class WebSearchAgent(AssistantAgent):
     def __init__(self):
         model = CONFIG_LIST[1]
@@ -30,12 +30,9 @@ class WebSearchAgent(AssistantAgent):
             User's message: '{query}'
             <search result>\n{search_res}\n</search result>
             
-            Respond based on the search result from web above:
-            - If the web search fails or there is no relevant information sufficient to answer user's message, *ONLY* respond 'no information'.
-            - If there is relevant information in the search result, *ONLY* Respond in this format:
-                1. *Summary*: A brief summary of the findings from the web, explicitly referencing the sources.
-                2. *Detailed Analysis*: An in-depth explanation based on the web search results
-                3. *Citations*: the url of the source.
+            - Extract only information that can be used to answer user's message and their corresponding source urls
+            - Do not hallucinate
+            - Do not answer user's message, respond with the extracted information only
         """
         response = self.generate_reply(messages = [{"role": "assistant", "content": web_search_prompt}])
         return response.strip()

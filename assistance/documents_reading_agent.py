@@ -2,7 +2,6 @@ from typing_extensions import Annotated
 from autogen import AssistantAgent
 from config import CONFIG_LIST, SnowflakeConfig
 from prompts.documents_reading_agent import DOCUMENTS_READING_SYSTEM_DESCRIPTION, DOCUMENTS_READING_SYSTEM_MESSAGE
-from utils.snowflake_utils import SnowflakeConnector
 
 class DocumentReadingAgent(AssistantAgent):
     def __init__(self):
@@ -12,37 +11,34 @@ class DocumentReadingAgent(AssistantAgent):
             description=DOCUMENTS_READING_SYSTEM_MESSAGE,
             system_message = DOCUMENTS_READING_SYSTEM_DESCRIPTION
         )
-        self.register_for_llm(name="retrieve_relevant_documents", description="Search relevant documents and return the content and it source.")(retrieve_relevant_documents)
         
-    def get_relevant_information(self, message: str):
-        search_result = retrieve_relevant_documents(query=message)
-        print("relevant documents search result", search_result)
+    def get_relevant_information(self, message: str, retrieve_relevant_documents: Annotated[list, "Search results"]) -> str:
         doc_message = f"""
             User's: '{message}'
-            Retrieved relevant documents: {search_result}\n
+            Retrieved relevant documents: {retrieve_relevant_documents}\n
 
-            - If there is no relevant information in the documents sufficient to answer user's message, *ONLY* reply 'no information'.
-            - If there is relevant information in the documents, *ONLY* provide the information in this format:
-                1. *Summary*: A brief summary of the relevant information in the documents.
-                2. *Detailed Analysis*: An in-depth information based on the documents, with citations for each piece of information.
-                3. *Citations*: A list of all referenced sources included in the relative path of the search results.
+            - Extract only information that can be used to answer user's message and its corresponding source file names
+            - Ensure the extracted information is complete, accurate, standalone that can be uderstood without the context
+            - Do not hallucinate
+            - Do not answer user's message, respond with the extracted information only
+            
             """
         response = self.generate_reply(messages = [{"role": "assistant", "content": doc_message}])
         response = response['content']
         return response
         
-def retrieve_relevant_documents(query: Annotated[str, "Search query for relevant documents"]) -> Annotated[str, "Search results"]:
-    """
-    Perform a retrieval-augmented search on the Snowflake database. This function utilizes the Retrieval-Augmented Generation (RAG) approach to search 
-    for relevant documents in the Snowflake database. It retrieves document chunks similar to the provided query.
+# def retrieve_relevant_documents(query: Annotated[str, "Search query for relevant documents"]) -> Annotated[str, "Search results"]:
+#     """
+#     Perform a retrieval-augmented search on the Snowflake database. This function utilizes the Retrieval-Augmented Generation (RAG) approach to search 
+#     for relevant documents in the Snowflake database. It retrieves document chunks similar to the provided query.
 
-    :param query: str
-        The search query used to retrieve relevant documents. This should be a descriptive 
-        query or keyword relevant to the content of uploaded documents.
-    :return: str
-        The search results, including chunks of relevant text and metadata matching 
-        the query.
-    """
-    snowflake_config = SnowflakeConfig()
-    snowflake_conn = SnowflakeConnector(snowflake_config)
-    return snowflake_conn.get_similar_chunks_search_service(query=query)
+#     :param query: str
+#         The search query used to retrieve relevant documents. This should be a descriptive 
+#         query or keyword relevant to the content of uploaded documents.
+#     :return: str
+#         The search results, including chunks of relevant text and metadata matching 
+#         the query.
+#     """
+#     snowflake_config = SnowflakeConfig()
+#     snowflake_conn = SnowflakeRAG(snowflake_config)
+#     return snowflake_conn.get_similar_chunks_search_service(query=query)

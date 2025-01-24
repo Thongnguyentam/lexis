@@ -2,14 +2,33 @@ from snowflake.core import Root
 import pandas as pd
 import json
 from typing import List, Dict, Any
+from assistance.critics_agent import CriticAgent, reflection_message
+from assistance.intent_classifier_agent import IntentClassifier
+from assistance.paper_search_agent import PaperSearchAgent
+from assistance.user_proxy import UserProxy
+from assistance.web_search_agent import WebSearchAgent
+from assistance.writer_agent import WriterAgent, create_prompt
 from config import SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SnowflakeConfig
 from snowflake.snowpark import Session
 import os
 from dotenv import load_dotenv
 
-class SnowflakeConnector:
+from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT
+from services.rag_agents import get_snowpark_session
+from services.search_service import generate_request_to_recipient
+from trulens.apps.custom import instrument
+from mistralai import Mistral
+
+class NoAgentRAG:
     def __init__(self, config: SnowflakeConfig):
         try:
+            # Initialize Mistral client
+            api_key = os.getenv("MISTRAL_API_KEY")
+            if not api_key:
+                # Instead of raising an error, just set client to None
+                self.mistral_client = None
+                return
+            self.mistral_client = Mistral(api_key=api_key)
             # Store config first before any other operations
             self.config = config
             
@@ -57,7 +76,7 @@ class SnowflakeConnector:
             print(f"Error: {detailed_error}")  # Debug print
             raise Exception(detailed_error)
 
-    #check
+
     def get_similar_chunks_search_service(
         self, 
         query, 
@@ -71,12 +90,9 @@ class SnowflakeConnector:
             filter_obj = {"@eq": {"category": category_value} }
             response = self.search_service.search(query, columns, filter=filter_obj, limit=num_chunks)
         
-        return response.model_dump_json()  
-
-    # check
-    def create_prompt(self, query:str):
-        prompt_context = self.get_similar_chunks_search_service(query)
-  
+        return response.results
+    
+    def create_prompt(self, query:str, prompt_context:list) -> str:  
         prompt = f"""
            You are an expert chat assistance that extracts information from the CONTEXT provided
            between <context> and </context> tags.
@@ -96,80 +112,36 @@ class SnowflakeConnector:
            Answer: 
            """
 
-        json_data = json.loads(prompt_context)
-        relative_paths = set(item['relative_path'] for item in json_data['results'])
+        relative_paths = set(item['relative_path'] for item in prompt_context)
         
         return prompt, relative_paths
-        
-    def generate_response(self, model: str, prompt: str, context: str) -> str:
-        query = f"""
-        SELECT snowflake.cortex.complete(
-            '{model}',
-            CONCAT(
-                'Answer the question ONLY using the context provided. Context: ',
-                '{context}',
-                'Question: ',
-                '{prompt}',
-                'Answer: '
-            )
-        ) as response
-        """
-        result = self.session.sql(query).collect()
-        return result[0]['RESPONSE']
-
-#check
-def get_snowpark_session():
-    """Get or create a Snowpark session"""
-    try:
-        # Load environment variables
-        load_dotenv()
-        
-        # Get connection parameters
-        account = os.getenv("SNOWFLAKE_ACCOUNT")
-        user = os.getenv("SNOWFLAKE_USER")
-        password = os.getenv("SNOWFLAKE_PASSWORD")
-        warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
-        database = os.getenv("SNOWFLAKE_DATABASE")
-        schema = os.getenv("SNOWFLAKE_SCHEMA")
-        
-        # Debug print (will be removed in production)
-        print("Connection Parameters (excluding password):")
-        print(f"Account: {account}")
-        print(f"User: {user}")
-        print(f"Database: {database}")
-        print(f"Schema: {schema}")
-        print(f"Warehouse: {warehouse}")
-        
-        # Verify all required parameters are present
-        if not all([account, user, password, warehouse, database, schema]):
-            missing = [
-                param for param, value in {
-                    "SNOWFLAKE_ACCOUNT": account,
-                    "SNOWFLAKE_USER": user,
-                    "SNOWFLAKE_PASSWORD": password,
-                    "SNOWFLAKE_WAREHOUSE": warehouse,
-                    "SNOWFLAKE_DATABASE": database,
-                    "SNOWFLAKE_SCHEMA": schema
-                }.items() if not value
+    
+    @instrument
+    def retrieve(self, query:str) -> str:
+        return self.get_similar_chunks_search_service(query)
+    
+    @instrument
+    def generate_completion(self, query:str, context_str: list) -> str:
+        # Get RAG context and prompt
+        prompt, source_paths = self.create_prompt(query, context_str)
+        # Use Mistral with RAG context
+        response = self.mistral_client.chat.complete(
+            model="mistral-large-latest",
+            messages=[
+                {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
+                {"role": "user", "content": prompt}
             ]
-            raise ValueError(f"Missing required Snowflake parameters: {', '.join(missing)}")
+        )
         
-        # Create connection parameters
-        connection_parameters = {
-            "account": account,
-            "user": user,
-            "password": password,
-            "warehouse": warehouse,
-            "database": database,
-            "schema": schema
-        }
-        
-        # Try to create session
-        session = Session.builder.configs(connection_parameters).create()
-        print("Snowflake session created successfully!")
-        return session
-        
-    except Exception as e:
-        error_msg = f"Failed to create Snowpark session: {str(e)}"
-        print(f"Error: {error_msg}")  # Debug print
-        raise Exception(error_msg)
+        # Add source attribution if sources were found
+        answer = response.choices[0].message.content
+        if source_paths:
+            sources_list = "\n".join([f"- {path}" for path in source_paths])
+            answer += f"\n\nSources:\n{sources_list}"
+        return answer
+    
+    @instrument
+    def query(self, query: str) -> str:
+        context_str = self.retrieve(query)
+        completion = self.generate_completion(query, context_str)
+        return completion

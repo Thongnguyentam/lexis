@@ -23,7 +23,7 @@ def generate_request_to_recipient(
             "max_turns": max_turns
         }
     
-def search(message: str):
+def agents_query(message: str):
     #agents initialization
     web_search_agent = WebSearchAgent()
     document_reading_agent = DocumentReadingAgent()

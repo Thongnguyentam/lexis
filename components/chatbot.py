@@ -1,3 +1,4 @@
+from services.rag_agents import AgentRAG
 from services.search_service import search
 import streamlit as st
 import os
@@ -7,7 +8,6 @@ from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPER
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
 from datetime import datetime
-from utils.snowflake_utils import SnowflakeConnector
 from config import SnowflakeConfig
 from components.mindmap import MindMap
 from components.videorag import VideoRAG
@@ -173,7 +173,7 @@ class Chatbot:
         # Initialize Snowflake RAG
         try:
             snowflake_config = SnowflakeConfig()
-            self.snowflake = SnowflakeConnector(snowflake_config)
+            self.snowflake = AgentRAG(snowflake_config)
         except Exception as e:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
@@ -302,7 +302,7 @@ class Chatbot:
             # Handle regular queries
             elif self.snowflake:
                 # # Get RAG context and prompt
-                # prompt, source_paths = self.snowflake.create_prompt(query)
+                # prompt, source_paths = self.snowflake.create_prompt_no_agent(query)
                 # # Use Mistral with RAG context
                 # response = self.mistral_client.chat.complete(
                 #     model="mistral-large-latest",
