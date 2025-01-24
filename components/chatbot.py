@@ -1,4 +1,5 @@
 from services.rag_agents import AgentRAG
+from services.rag_no_agents import NoAgentRAG
 import streamlit as st
 import os
 from mistralai import Mistral
@@ -28,7 +29,7 @@ def init_chat_history():
             "messages": [
                 {
                     "role": "assistant",
-                    "content": "Hi! I’m Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖"
+                    "content": "Hi! I'm Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖"
                 }
             ]
         }
@@ -172,7 +173,7 @@ class Chatbot:
         # Initialize Snowflake RAG
         try:
             snowflake_config = SnowflakeConfig()
-            self.snowflake = AgentRAG(snowflake_config)
+            self.snowflake = NoAgentRAG(snowflake_config)
         except Exception as e:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
@@ -300,27 +301,11 @@ class Chatbot:
                 return self.process_visualization_request(query)
             # Handle regular queries
             elif self.snowflake:
-                # # Get RAG context and prompt
-                # prompt, source_paths = self.snowflake.create_prompt_no_agent(query)
-                # # Use Mistral with RAG context
-                # response = self.mistral_client.chat.complete(
-                #     model="mistral-large-latest",
-                #     messages=[
-                #         {"role": "system", "content": DEFAULT_ASSISTANT_PROMPT},
-                #         {"role": "user", "content": prompt}
-                #     ]
-                # )
-                
-                # # Add source attribution if sources were found
-                # answer = response.choices[0].message.content
-                # if source_paths:
-                #     sources_list = "\n".join([f"- {path}" for path in source_paths])
-                #     answer += f"\n\nSources:\n{sources_list}"
-                answer = search(query)
-                return answer
-            else:
-                # Fallback to regular chat if Snowflake is not available
-                return self._process_regular_query(query)
+                # Use NoAgentRAG's query method directly
+                return self.snowflake.query(query)
+            # else:
+            #     # Fallback to regular chat if Snowflake is not available
+            #     return self._process_regular_query(query)
                 
         except Exception as e:
             st.error(f"Error processing query: {e}")
