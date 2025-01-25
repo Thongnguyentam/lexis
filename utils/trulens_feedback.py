@@ -6,6 +6,8 @@ from snowflake.snowpark import Session
 from trulens.providers.openai import OpenAI as OpenAIProvider
 from dotenv import load_dotenv
 
+from config import OPENAPI_KEY
+
 load_dotenv()
 
 def get_trulens_feedbacks(snowpark_session: Session):
@@ -37,7 +39,7 @@ def get_trulens_feedbacks(snowpark_session: Session):
     return feedbacks
 
 def get_f_guardrail():
-    fopenai_provider = OpenAIProvider(model_engine="gpt-4o-mini")
+    fopenai_provider = OpenAIProvider(model_engine="gpt-4o-mini", api_key=OPENAPI_KEY)
     f_guardrail = Feedback(
         fopenai_provider.context_relevance, name="Context Relevance"
     )
