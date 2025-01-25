@@ -346,8 +346,8 @@ class Chatbot:
                 self.snowflake.session.close()
             except:
                 pass
-        # if hasattr(self, 'video_rag'):
-        #     self.video_rag.cleanup()
+        if hasattr(self, 'video_rag'):
+            self.video_rag.cleanup()
 
     def __del__(self):
         """Destructor to ensure proper resource cleanup when object is deleted."""

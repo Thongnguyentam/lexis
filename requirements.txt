@@ -22,5 +22,10 @@ trulens-eval
 trulens-connectors-snowflake==1.3.2
 arxiv==2.1.3
 pysqlite3-binary>=0.5.1 
-trulens-connectors-snowflake
 trulens-providers-openai
+trulens-core==1.3.2
+trulens-dashboard==1.3.2
+trulens-feedback==1.3.2
+trulens-otel-semconv==1.3.2
+trulens-providers-cortex==1.3.2
+trulens-providers-openai==1.3.2
