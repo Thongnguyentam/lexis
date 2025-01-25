@@ -1,4 +1,4 @@
-from services.rag_agents import AgentRAG
+from services.rag_agents import AgentRAG, FilteredAgentRAG
 from services.rag_no_agents import NoAgentRAG
 import streamlit as st
 import os
@@ -174,7 +174,7 @@ class Chatbot:
         try:
             snowflake_config = SnowflakeConfig()
             if st.session_state.get('rag_type', 'no_agents') == 'with_agents':
-                self.snowflake = AgentRAG(snowflake_config)
+                self.snowflake = FilteredAgentRAG(snowflake_config)
             else:
                 self.snowflake = NoAgentRAG(snowflake_config)
                 
