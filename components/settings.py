@@ -2,6 +2,7 @@ import streamlit as st
 import os
 from dotenv import load_dotenv
 import pandas as pd
+from config import MISTRAL_API_KEY, SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_SEARCH_SERVICE, SNOWFLAKE_STAGE_NAME, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE
 from utils.chat_utils import start_new_chat
 
 def render_settings():
@@ -9,7 +10,7 @@ def render_settings():
     load_dotenv()
     
     # Get API key from environment or session state
-    default_api_key = os.getenv('MISTRAL_API_KEY', '')
+    default_api_key = MISTRAL_API_KEY
     
     # Conversations section
     st.sidebar.markdown('<h1>Conversations</h1>', unsafe_allow_html=True)
@@ -196,15 +197,15 @@ def render_settings():
     
     # Initialize Snowflake configs in session state
     snowflake_configs = {
-        'mistral_api_key': os.getenv('MISTRAL_API_KEY', ''),
-        'account': os.getenv('SNOWFLAKE_ACCOUNT', ''),
-        'user': os.getenv('SNOWFLAKE_USER', ''),
-        'password': os.getenv('SNOWFLAKE_PASSWORD', ''),
-        'database': os.getenv('SNOWFLAKE_DATABASE', ''),
-        'schema': os.getenv('SNOWFLAKE_SCHEMA', ''),
-        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', ''),
-        'search_service': os.getenv('SNOWFLAKE_SEARCH_SERVICE', ''),
-        'stage_name': os.getenv('SNOWFLAKE_STAGE_NAME', '')
+        'mistral_api_key': MISTRAL_API_KEY,
+        'account': SNOWFLAKE_ACCOUNT,
+        'user': SNOWFLAKE_USER,
+        'password': SNOWFLAKE_PASSWORD,
+        'database': SNOWFLAKE_DATABASE,
+        'schema': SNOWFLAKE_SCHEMA,
+        'warehouse': SNOWFLAKE_WAREHOUSE,
+        'search_service': SNOWFLAKE_SEARCH_SERVICE,
+        'stage_name': SNOWFLAKE_STAGE_NAME
     }
     
     for key in snowflake_configs:

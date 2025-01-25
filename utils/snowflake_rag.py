@@ -6,20 +6,22 @@ from typing import List, Dict, Any
 import os
 from mistralai import Mistral
 
+from config import MISTRAL_API_KEY, SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER
+
 class SnowflakeRAG:
     def __init__(self, warehouse: str = "tc_wh"):
         # Initialize Snowflake session using connection parameters
         self.session = Session.builder.configs({
-            "account": os.getenv("SNOWFLAKE_ACCOUNT"),
-            "user": os.getenv("SNOWFLAKE_USER"),
-            "password": os.getenv("SNOWFLAKE_PASSWORD"),
+            "account": SNOWFLAKE_ACCOUNT,
+            "user": SNOWFLAKE_USER,
+            "password": SNOWFLAKE_PASSWORD,
             "warehouse": warehouse,
-            "database": os.getenv("SNOWFLAKE_DATABASE"),
-            "schema": os.getenv("SNOWFLAKE_SCHEMA")
+            "database": SNOWFLAKE_DATABASE,
+            "schema": SNOWFLAKE_SCHEMA
         }).create()
         
         # Initialize Mistral client
-        self.mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+        self.mistral_client = Mistral(api_key=MISTRAL_API_KEY)
         
     def extract_pdf_text(self, stage_path: str, table_name: str) -> None:
         """Extract text from PDFs in the specified stage"""

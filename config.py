@@ -1,15 +1,16 @@
 from dataclasses import dataclass
 import os
+import streamlit as st
 from dotenv import load_dotenv
 load_dotenv()
 
 @dataclass
 class SnowflakeConfig:
-    database: str = os.getenv("SNOWFLAKE_DATABASE", "PROJECTX")
-    schema: str = os.getenv("SNOWFLAKE_SCHEMA", "PUBLIC")
-    search_service: str = os.getenv("SNOWFLAKE_SEARCH_SERVICE", "CC_SEARCH_SERVICE_CS")
-    warehouse: str = os.getenv("SNOWFLAKE_WAREHOUSE", "COMPUTE_WH")
-    stage_name: str = os.getenv("SNOWFLAKE_STAGE_NAME", "@docs")
+    database: str = st.secrets["env"]["SNOWFLAKE_DATABASE"]
+    schema: str = st.secrets["env"]["SNOWFLAKE_SCHEMA"]
+    search_service: str = st.secrets["env"]["SNOWFLAKE_SEARCH_SERVICE"]
+    warehouse: str = st.secrets["env"]["SNOWFLAKE_WAREHOUSE"]
+    stage_name: str = st.secrets["env"]["SNOWFLAKE_STAGE_NAME"]
 
 @dataclass
 class AppConfig:
@@ -18,16 +19,18 @@ class AppConfig:
     default_chunk_overlap: int = 0
     default_search_limit: int = 7
     
-SNOWFLAKE_ACCOUNT = os.getenv("SNOWFLAKE_ACCOUNT")
-SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER")
-SNOWFLAKE_PASSWORD = os.getenv("SNOWFLAKE_PASSWORD")
-SNOWFLAKE_DATABASE = os.getenv("SNOWFLAKE_DATABASE")
-SNOWFLAKE_SCHEMA = os.getenv("SNOWFLAKE_SCHEMA")
-SNOWFLAKE_WAREHOUSE = os.getenv("SNOWFLAKE_WAREHOUSE")
+SNOWFLAKE_ACCOUNT = st.secrets["env"]["SNOWFLAKE_ACCOUNT"]
+SNOWFLAKE_USER = st.secrets["env"]["SNOWFLAKE_USER"]
+SNOWFLAKE_PASSWORD = st.secrets["env"]["SNOWFLAKE_PASSWORD"]
+SNOWFLAKE_DATABASE = st.secrets["env"]["SNOWFLAKE_DATABASE"]
+SNOWFLAKE_SCHEMA = st.secrets["env"]["SNOWFLAKE_SCHEMA"]
+SNOWFLAKE_WAREHOUSE = st.secrets["env"]["SNOWFLAKE_WAREHOUSE"]
+SNOWFLAKE_SEARCH_SERVICE = st.secrets["env"]["SNOWFLAKE_SEARCH_SERVICE"]
+SNOWFLAKE_STAGE_NAME = st.secrets["env"]["SNOWFLAKE_STAGE_NAME"]
 
-APIFY_KEY = os.getenv("APIFY_KEY")
-MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
-OPENAPI_KEY = os.getenv("OPENAI_API_KEY")
+APIFY_KEY = st.secrets["env"]["APIFY_KEY"]
+MISTRAL_API_KEY = st.secrets["env"]["MISTRAL_API_KEY"]
+OPENAPI_KEY = st.secrets["env"]["OPENAI_API_KEY"]
 
 CONFIG_LIST = [
     {

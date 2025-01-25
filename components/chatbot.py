@@ -8,7 +8,7 @@ from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT, VISUALIZATION_EXPER
 from utils.code_interpreter import CodeInterpreter
 from typing import Optional
 from datetime import datetime
-from config import SnowflakeConfig
+from config import MISTRAL_API_KEY, SnowflakeConfig
 from components.mindmap import MindMap
 from components.videorag import VideoRAG
 import codecs
@@ -77,7 +77,7 @@ def render_chatbot():
     load_dotenv()
     
     # Get API key from environment
-    api_key = os.getenv("MISTRAL_API_KEY")
+    api_key = MISTRAL_API_KEY
     if not api_key:
         return
     
@@ -163,7 +163,7 @@ class Chatbot:
         self.code_interpreter = CodeInterpreter()
         
         # Initialize Mistral client
-        api_key = os.getenv("MISTRAL_API_KEY")
+        api_key = MISTRAL_API_KEY
         if not api_key:
             # Instead of raising an error, just set client to None
             self.mistral_client = None

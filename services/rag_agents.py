@@ -186,12 +186,12 @@ def get_snowpark_session():
         load_dotenv()
         
         # Get connection parameters
-        account = os.getenv("SNOWFLAKE_ACCOUNT")
-        user = os.getenv("SNOWFLAKE_USER")
-        password = os.getenv("SNOWFLAKE_PASSWORD")
-        warehouse = os.getenv("SNOWFLAKE_WAREHOUSE")
-        database = os.getenv("SNOWFLAKE_DATABASE")
-        schema = os.getenv("SNOWFLAKE_SCHEMA")
+        account = SNOWFLAKE_ACCOUNT
+        user = SNOWFLAKE_USER
+        password = SNOWFLAKE_PASSWORD
+        warehouse = SNOWFLAKE_WAREHOUSE
+        database = SNOWFLAKE_DATABASE
+        schema = SNOWFLAKE_SCHEMA
         
         # Debug print (will be removed in production)
         # print("Connection Parameters (excluding password):")

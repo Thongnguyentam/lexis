@@ -1,7 +1,7 @@
 from snowflake.core import Root
 
 from typing import List
-from config import SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SnowflakeConfig
+from config import MISTRAL_API_KEY, SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SnowflakeConfig
 
 import os
 from dotenv import load_dotenv
@@ -15,7 +15,7 @@ class NoAgentRAG:
     def __init__(self, config: SnowflakeConfig):
         try:
             # Initialize Mistral client
-            api_key = os.getenv("MISTRAL_API_KEY")
+            api_key = MISTRAL_API_KEY
             if not api_key:
                 # Instead of raising an error, just set client to None
                 self.mistral_client = None

@@ -1,6 +1,8 @@
 from __future__ import annotations
 import sys
 from pathlib import Path
+
+from config import MISTRAL_API_KEY
 sys.path.append(str(Path(__file__).parent.parent))
 
 import re
@@ -23,7 +25,7 @@ from prompts.system_prompts import (
 NODE_COLOR = "#00CED1" 
 SELECTED_NODE_COLOR = "#FF4500"
 
-mistral_client = Mistral(api_key=os.getenv("MISTRAL_API_KEY"))
+mistral_client = Mistral(api_key=MISTRAL_API_KEY)
 
 @dataclass
 class Message:
