@@ -71,3 +71,4 @@ data/
 *.ipynb
 default.*
 tmp/
+*.sqlite
