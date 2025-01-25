@@ -85,6 +85,33 @@ def render_settings():
 
     st.sidebar.markdown("---")
     
+    # RAG Selection section
+    st.sidebar.markdown('<h1>RAG Selection</h1>', unsafe_allow_html=True)
+    
+    # Initialize rag_type in session state if not exists
+    if 'rag_type' not in st.session_state:
+        st.session_state.rag_type = 'no_agents'
+    
+    col1, col2 = st.sidebar.columns(2)
+    
+    with col1:
+        if st.button("No Agents", 
+                    key="no_agents_btn", 
+                    use_container_width=True,
+                    type="primary" if st.session_state.rag_type == 'no_agents' else "secondary"):
+            st.session_state.rag_type = 'no_agents'
+            st.rerun()
+    
+    with col2:
+        if st.button("With Agents", 
+                    key="with_agents_btn", 
+                    use_container_width=True,
+                    type="primary" if st.session_state.rag_type == 'with_agents' else "secondary"):
+            st.session_state.rag_type = 'with_agents'
+            st.rerun()
+
+    st.sidebar.markdown("---")
+    
     # File Collection section
     st.sidebar.markdown('<h1>File Collection</h1>', unsafe_allow_html=True)
     col1, col2 = st.sidebar.columns(2)
@@ -139,7 +166,6 @@ def render_settings():
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state['current_file'] = uploaded_file.name
                 
-                upload_to_stage(uploaded_file)
                 st.sidebar.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
         except Exception as e:
             st.sidebar.error(f"Error processing uploaded file: {str(e)}")

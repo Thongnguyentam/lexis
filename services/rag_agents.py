@@ -14,9 +14,11 @@ from snowflake.snowpark import Session
 import os
 from dotenv import load_dotenv
 
-from services.search_service import generate_request_to_recipient
+from utils.agents_utils import generate_request_to_recipient
 from trulens.apps.custom import instrument
 from trulens.core.guardrails.base import context_filter
+
+from utils.trulens_feedback import get_f_guardrail
 
 class AgentRAG:
     def __init__(self, config: SnowflakeConfig):
@@ -160,7 +162,7 @@ class FilteredAgentRAG(AgentRAG):
     def __init__(self, config: SnowflakeConfig):
         super().__init__(config)
         
-    #@context_filter(f_guardrail, 0.75, keyword_for_prompt="query")
+    @context_filter(get_f_guardrail(), 0.5, keyword_for_prompt="query")
     def get_similar_chunks_search_service(
         self, 
         query, 
@@ -168,6 +170,7 @@ class FilteredAgentRAG(AgentRAG):
         columns: List[str] = ["chunk", "relative_path", "category"], 
         num_chunks: int = 3
     ):
+        print(f"Filtering guardrail for query ...")
         if category_value == "ALL":
             response = self.search_service.search(query, columns, limit=num_chunks)
         else: 

@@ -1,21 +1,13 @@
 from snowflake.core import Root
-import pandas as pd
-import json
-from typing import List, Dict, Any
-from assistance.critics_agent import CriticAgent, reflection_message
-from assistance.intent_classifier_agent import IntentClassifier
-from assistance.paper_search_agent import PaperSearchAgent
-from assistance.user_proxy import UserProxy
-from assistance.web_search_agent import WebSearchAgent
-from assistance.writer_agent import WriterAgent, create_prompt
+
+from typing import List
 from config import SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE, SnowflakeConfig
-from snowflake.snowpark import Session
+
 import os
 from dotenv import load_dotenv
-
+load_dotenv()
 from prompts.system_prompts import DEFAULT_ASSISTANT_PROMPT
 from services.rag_agents import get_snowpark_session
-from services.search_service import generate_request_to_recipient
 from trulens.apps.custom import instrument
 from mistralai import Mistral
 

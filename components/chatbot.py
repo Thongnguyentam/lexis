@@ -173,7 +173,11 @@ class Chatbot:
         # Initialize Snowflake RAG
         try:
             snowflake_config = SnowflakeConfig()
-            self.snowflake = NoAgentRAG(snowflake_config)
+            if st.session_state.get('rag_type', 'no_agents') == 'with_agents':
+                self.snowflake = AgentRAG(snowflake_config)
+            else:
+                self.snowflake = NoAgentRAG(snowflake_config)
+                
         except Exception as e:
             st.error(f"Error initializing Snowflake: {str(e)}")
             self.snowflake = None
@@ -285,16 +289,16 @@ class Chatbot:
         - Regular chat responses
         """
         try:
-            # # Check if query contains YouTube URL
-            # if is_youtube_url(query):
-            #     return self.video_rag.process_video_query(query)
+            # Check if query contains YouTube URL
+            if is_youtube_url(query):
+                return self.video_rag.process_video_query(query)
             
-            # # If we have a current video and the query seems to be about it
-            # elif self.current_video_id and not self.is_mindmap_request(query):
-            #     return self.video_rag.query_video(query, self.current_video_id)
+            # If we have a current video and the query seems to be about it
+            elif self.current_video_id and not self.is_mindmap_request(query):
+                return self.video_rag.query_video(query, self.current_video_id)
             
             # Check if it's a mindmap request
-            if self.is_mindmap_request(query):
+            elif self.is_mindmap_request(query):
                 return self.process_mindmap_request(query)
             # Check if it's a visualization request
             elif any(keyword in query.lower() for keyword in ['histogram', 'plot', 'graph', 'visualize', 'chart']):
