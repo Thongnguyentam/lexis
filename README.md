@@ -2,8 +2,6 @@
 
 **Project X** is an advanced research assistant designed to streamline and enhance the research process by leveraging state-of-the-art AI technologies. With hybrid retrieval, multi-modal support, and advanced citation capabilities, Project X empowers researchers to efficiently analyze, retrieve, and cite information from diverse data sources.
 
----
-
 ## :snowflake: Core Features
 
 ### 1. **Robust Retrieval Augmented Generation (RAG)** :robot:
@@ -16,14 +14,10 @@
   - **Research Paper Retrieval**: By querying Arxiv databases and repositories, agents can locate and summarize research papers or articles pertinent to the topic of interest.  
   - **Knowledge Aggregation**: Through intelligent filtering and integration of diverse data sources, the agents ensure high-quality and accurate responses tailored to the user's needs.  
 
----
-
 ### 2. **Multi-Modal Question Answering (QA)** :left_speech_bubble:
 
 - **Document Parsing:** Perform QA on documents containing text, figures, and tables.
 - **Multi-Document Support:** Seamlessly analyze and extract insights from multiple documents simultaneously.
-
----
 
 ### 3. **Advanced Citations** :open_book:
 
@@ -35,8 +29,6 @@
   - Cite specific quotes from videos with accurate timestamps and proper format.
   - Save time on manual video referencing, ensuring precision in both time and content.
 
----
-
 ### 4. **Interactive Mind Maps** :pencil2:
 
 - **AI-Powered Generation:** Create mind maps automatically from any topic or text using Mistral AI.
@@ -46,14 +38,10 @@
   - Visual node selection and highlighting
 - **Dynamic Visualization:** Interactive graph layout with physics simulation for optimal readability.
 
----
-
 ### 5. **Data Visualization** :chart:
 
 - Automatically generate visualizations from data files using Python and matplotlib.
 - Interactive plots and charts to support research findings and presentations.
-
----
 
 ## :snowflake: Technical Architecture
 ![Description of Image](https://drive.google.com/uc?export=view&id=1quNYad3x2--dm3Fqpe9qYES2PKlckPYZ)
@@ -99,8 +87,6 @@ Our development process included creating multiple RAG versions:
 ![Description of Image](https://drive.google.com/uc?export=view&id=11Mgwqn1LnKgPFEmy4XtFydIUbFLZA36a)
 
 Our agent_v3's iterative refinements, including Trulens context filtering at threshold 0.5 and enhanced processing through multiple AI agents, make it a more robust and efficient RAG system compared to Agent_v1. It achieves better groundedness and higher answer quality.
-
----
 
 ## :snowflake: Installation and Usage
 
@@ -201,8 +187,6 @@ project-x/
 ### License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
----
 
 ## :reminder_ribbon: Support 
 
