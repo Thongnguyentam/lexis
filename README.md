@@ -1,4 +1,4 @@
-# :snowflake: Project X - Research Assistant :blue_book: :bookmark_tabs:
+# :snowflake: Lexis - Research Assistant :blue_book: :bookmark_tabs:
 
 **Project X** is an advanced research assistant designed to streamline and enhance the research process by leveraging state-of-the-art AI technologies. With hybrid retrieval, multi-modal support, and advanced citation capabilities, Project X empowers researchers to efficiently analyze, retrieve, and cite information from diverse data sources.
 
