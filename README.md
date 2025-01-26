@@ -9,7 +9,7 @@
 - **Hybrid Retrieval:** Combines full-text and vector-based retrieval with re-ranking to ensure the highest quality of results.
 - **Multi-File Search:** Search data across multiple documents, not limited to a single file.
 - **AI Agent Assistance:** If local data is insufficient, a mode with AI agents can perform searches on the web.
-- **Multi-Agent Architecture**: Powered by Autogen and Mistral AI, enabling dynamic and context-aware retrieval-augmented generation (RAG). The agents are designed to collaborate seamlessly by performing advanced tasks such as: 
+- **Multi-Agent Architecture**: Powered by Autogen and Mistral AI, enabling dynamic and context-aware retrieval-augmented generation (RAG). The agents are designed to collaborate seamlessly by performing advanced tasks: 
   - **Web Search**: Agents can autonomously search the web to gather real-time, relevant information for user queries.  
   - **Research Paper Retrieval**: By querying Arxiv databases and repositories, agents can locate and summarize research papers or articles pertinent to the topic of interest.  
   - **Knowledge Aggregation**: Through intelligent filtering and integration of diverse data sources, the agents ensure high-quality and accurate responses tailored to the user's needs.  
