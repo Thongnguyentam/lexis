@@ -64,10 +64,10 @@
 - **User Proxy**: Initial query handling
 - **Intent Classifier**: A semantic router to identify user's intent, whether reading uploaded documents, searching for papers, searching for real-time data, or general query.
 - **Specialized Agents**:
-   - Document Reading Agent: extracts and retrieves relevant information from uploaded documents using LAYOUT mode, embeddings, and search algorithms.
-   - Web Search Agent: fetches real-time data via search engine APIs or scraping, with result ranking for relevance.
-   - Articles Research Agent: searches academic databases for papers relevant to the query.
-   - Writer Agent: aggregates context from all agents and generates a cohesive, factually accurate response. Prioritizes data based on agent reliability and relevance.
+   - **Document Reading Agent:** extracts and retrieves relevant information from uploaded documents using LAYOUT mode, embeddings, and search algorithms.
+   - **Web Search Agent:** fetches real-time data via search engine APIs or scraping, with result ranking for relevance.
+   - **Articles Research Agent:** searches academic databases for papers relevant to the query.
+   - **Writer Agent:** aggregates context from all agents and generates a cohesive, factually accurate response. Prioritizes data based on agent reliability and relevance.
 - **Critic Agent**: Response refinement based on user's query, retrieved context information, writer agent's response to reduce hallucinations from LLMs.
 
 ### :asterisk: Evaluation and Tracking for LLM Experiments
