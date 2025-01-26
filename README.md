@@ -61,14 +61,14 @@
 
 ### :asterisk: Agentic RAG with Multi-Agents Pipeline
 
-1. **User Proxy**: Initial query handling
-3. **Intent Classifier**: A semantic router to identify user's intent, whether reading uploaded documents, searching for a paper, searching for real-time data, or general query.
-4. **Specialized Agents**:
+- **User Proxy**: Initial query handling
+- **Intent Classifier**: A semantic router to identify user's intent, whether reading uploaded documents, searching for papers, searching for real-time data, or general query.
+- **Specialized Agents**:
    - Document Reading Agent
    - Web Search Agent
    - Articles Research Agent
    - Conversation Agent
-5. **Critic Agent**: Response refinement based on user's query, retrieved context information, writer agent's response to reduce hallucinations from LLMs.
+- **Critic Agent**: Response refinement based on user's query, retrieved context information, writer agent's response to reduce hallucinations from LLMs.
 
 ### :asterisk: Evaluation and Tracking for LLM Experiments
 ![Description of Image](https://drive.google.com/uc?export=view&id=1PftJkJLoYlitlQ78nm-G2Bb1SURkZBQK)
