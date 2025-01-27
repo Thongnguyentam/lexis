@@ -4,6 +4,16 @@ from dotenv import load_dotenv
 import pandas as pd
 from config import MISTRAL_API_KEY, SNOWFLAKE_ACCOUNT, SNOWFLAKE_DATABASE, SNOWFLAKE_PASSWORD, SNOWFLAKE_SCHEMA, SNOWFLAKE_SEARCH_SERVICE, SNOWFLAKE_STAGE_NAME, SNOWFLAKE_USER, SNOWFLAKE_WAREHOUSE
 from utils.chat_utils import start_new_chat
+from utils.snowflake_utils import upload_pdf_to_snowflake
+
+connection_params = {
+    "user": SNOWFLAKE_USER,
+    "password": SNOWFLAKE_PASSWORD,
+    "account": SNOWFLAKE_ACCOUNT,
+    "warehouse": SNOWFLAKE_WAREHOUSE,
+    "database": SNOWFLAKE_DATABASE,
+    "schema": SNOWFLAKE_SCHEMA,
+}
 
 def render_settings():
     # Load environment variables
@@ -167,6 +177,10 @@ def render_settings():
                 st.session_state.uploaded_file = uploaded_file
                 st.session_state['current_file'] = uploaded_file.name
                 
+                # ADD HERE: Call upload_pdf_to_snowflake with the uploaded file
+                with st.spinner(f"Processing and uploading '{uploaded_file.name}' to Snowflake..."):
+                    upload_pdf_to_snowflake(connection_params, uploaded_file)
+                
                 st.sidebar.success(f"File '{uploaded_file.name}' uploaded successfully! Size: {len(file_bytes) / 1024:.2f} KB")
         except Exception as e:
             st.sidebar.error(f"Error processing uploaded file: {str(e)}")
@@ -191,5 +205,3 @@ def render_settings():
 
 
     st.sidebar.markdown("---")
-    
-    

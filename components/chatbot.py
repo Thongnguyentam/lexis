@@ -71,7 +71,12 @@ def render_chatbot():
     - Response handling for different types of requests (visualization, mindmap, etc)
     
     Handles API authentication and error states."""
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+    .chat-container {
+        margin-bottom: 100px;  /* Adjust bottom margin */
+    }
+    </style>""", unsafe_allow_html=True)
     
     # Load environment variables
     load_dotenv()
@@ -90,7 +95,7 @@ def render_chatbot():
     for message in messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-    
+      
     # Add RAG status indicator
     # if hasattr(st.session_state, 'chatbot') and st.session_state.chatbot.snowflake:
     #     st.sidebar.success("📚 Knowledge Base: Connected")
@@ -131,11 +136,15 @@ def render_chatbot():
                     # Handle regular chat responses
                     progress_bar.progress(60)  # Query processing
                     response = chatbot.process_query(prompt)
-                
+
                 progress_bar.progress(100)  # Complete
                 progress_bar.empty()  # Remove progress bar
                 message_placeholder.markdown(response)
-                add_message("assistant", response)
+                add_message("assistant", f"{response}")
+                
+                # Add more space below the last response
+                st.write("")
+                st.write("")
                 
             except Exception as e:
                 progress_bar.empty()  # Remove progress bar
