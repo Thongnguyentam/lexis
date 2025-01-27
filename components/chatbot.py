@@ -29,7 +29,7 @@ def init_chat_history():
             "messages": [
                 {
                     "role": "assistant",
-                    "content": "Hi! I'm Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖"
+                    "content": "Hi! I'm Lexis, your AI research assistant. Unlike generic AI, I specialize in analyzing documents, answering complex questions, and even creating knowledge graphs to visualize insights. Ready to dive in? 🤖 \n If you upload a document, please wait one minute for Lexis to process it."
                 }
             ]
         }
