@@ -21,7 +21,7 @@ requests>=2.31.0
 trulens-eval
 trulens-connectors-snowflake==1.3.2
 arxiv==2.1.3
-#pysqlite3-binary>=0.5.1 
+pysqlite3-binary>=0.5.1 
 trulens-providers-openai
 trulens-core==1.3.2
 trulens-dashboard==1.3.2
